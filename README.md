@@ -1,5 +1,5 @@
 ## Scrycall
-A linux command line tool for querying the scryfall.com API
+A linux command line tool for querying the scryfall.com API for Magic cards.
 
 
 ### What does Scrycall do?
