@@ -82,12 +82,12 @@ Vigilance
 
 You can print the name of the previous property using `^` within the brackets. This can be useful when combined with iterating.
 ```
-> scry "scalding tarn" --format="%[prices;*;^] %| $%[prices;*]"
-usd       $55.63
-usd_foil  $102.86
-eur       $46.00
-eur_foil  $81.50
-tix       $21.14
+> scry "scalding tarn" --format="%[prices;*;^] %| %[prices;*]"
+usd       55.63
+usd_foil  102.86
+eur       46.00
+eur_foil  81.50
+tix       21.14
 ```
 
 Some properties are web addresses for an api call to another object. The api will automatically be called (and cached) and you can traverse the retrieved object as normal.
