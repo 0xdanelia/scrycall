@@ -40,6 +40,12 @@ Spell Pierce
 Stubborn Denial
 ```
 
+You can also pipe the output into another program. For example, use Scrycall to get the url of a card image, then pipe into wget to download and save the image.
+```
+> scry "time walk" set:alpha --f="%[image_uris;large]" | xargs wget -O "time_walk.jpg"
+```
+The Scryfall.com developers request that you add a delay of 50-100 milliseconds when making multiple rapid calls to the api. Scrycall automatically adds this delay between multiple calls within the program, but you are on your own when making calls elsewhere.
+
 ### What else can I print about a card?
 
 You can use the argument `--format=` or `--f=` to print different information about the cards that the query returns. Within the format string  `%` is a special character used to indicate certain parameters based on the JSON card objects. Be sure to surround your format string in quotes "" if it contains any whitespace. The special parameters are:
