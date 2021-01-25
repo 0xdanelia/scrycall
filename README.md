@@ -1,6 +1,7 @@
 ## Scrycall
 A linux command line tool for querying the scryfall.com API for Magic cards.
 
+<img src="https://i.imgur.com/k2M2bhR.gif">
 
 ### What does Scrycall do?
 Scrycall makes it easy to search for MTG cards from the linux command line. It prints the card information of your choice to the terminal, allowing for easy integration with other linux tools using pipes. Scrycall uses https://scryfall.com/ to query for cards which are returned as JSON objects. You can parse the JSON using special format parameters (see below) to print any information you want about the cards you query.
