@@ -297,6 +297,6 @@ def printline(card, params, options, ifnull):
 			toprint.append(param)
 	
 	# return a list containing each column to be printed
-	cols.append(''.join(toprint))
+	cols.append(''.join(toprint).replace('\n', '\t'))
 	return cols
 
