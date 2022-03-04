@@ -1,10 +1,11 @@
 from scry_api import get_api_url_from_query, get_api_data_from_url
-from scry_cache import load_cache_api, load_cache_card, write_cache_api, write_cache_card
+from scry_cache import load_cache_url, load_cache_card, write_cache_url, write_cache_card
 
 
 # get a list of cards from a query string
 def get_cards_from_query(query):
 	url = get_api_url_from_query(query)
+	print(url)
 	card_list = get_cards_from_url(url)
 	return card_list
 
@@ -38,18 +39,16 @@ def get_cards_from_json_data(data):
 
 # save card data to local cache
 def save_to_cache(url, cards):
-	ids = []
 	# cache each card individully
 	for card in cards:
-		ids.append(card['id'])
-		write_cache_card(card['id'], card)
+		write_cache_card(card)
 	# cache the list of card ids tied to the url
-	write_cache_api(url, ids)
+	write_cache_url(url, cards)
 
 
 # load cards from local cache
 def load_cards_from_cache(url):
-	cached_card_ids = load_cache_api(url)
+	cached_card_ids = load_cache_url(url)
 	if cached_card_ids == None:
 		return None
 	# the query url is tied to a list of card ids
@@ -64,3 +63,4 @@ def load_cards_from_cache(url):
 				continue
 		cards.append(card)
 	return cards
+
