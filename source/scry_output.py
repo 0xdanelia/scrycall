@@ -1,4 +1,5 @@
 import time
+from scry_data import get_uri_attribute_from_url
 
 # shortcuts for printing card attrobutes in the format string
 ATTR_CODES = {
@@ -108,10 +109,14 @@ def parse_attr(card, attr_list):
 		# this prints a list of the available attribute names
 		elif attr == '?':
 			value = get_available_attr_names(value)
+		# this queries the api if the previous value is a url
+		elif attr == '/':
+			value = get_uri_attribute_from_url(value)
 		else:
 			value = get_attr_value(value, attr)
 		if value == None:
 			return None
+		
 		prev_attr = attr
 	return str(value)
 
@@ -133,6 +138,9 @@ def iterate_attr(card, attr_list, print_line):
 		# this prints a list of the available attribute names
 		elif attr == '?':
 			value = get_available_attr_names(value)
+		# this queries the api if the previous value is a url
+		elif attr == '/':
+			value = get_uri_attribute_from_url(value)
 		else:
 			value = get_attr_value(value, attr)
 		if value == None:

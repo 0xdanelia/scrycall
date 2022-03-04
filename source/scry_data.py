@@ -5,7 +5,6 @@ from scry_cache import load_cache_url, load_cache_card, write_cache_url, write_c
 # get a list of cards from a query string
 def get_cards_from_query(query):
 	url = get_api_url_from_query(query)
-	print(url)
 	card_list = get_cards_from_url(url)
 	return card_list
 
@@ -20,11 +19,25 @@ def get_cards_from_url(url):
 	return card_list			
 
 
+# TODO: this makes some assumptions about the shape of the data
+# TODO: make this less clunky
+# call an api url found nested in the card data
+def get_uri_attribute_from_url(url):
+	json_data = load_cache_url(url)
+	if json_data == None:
+		json_data = get_api_data_from_url(url)
+		write_cache_url(url, [json_data])
+		write_cache_card(json_data)
+	else:
+		json_data = load_cache_card(json_data[0])
+	return json_data
+
+
 # get a single card from the api
 def get_card_from_id(id):
 	url = 'https://api.scryfall.com/cards/' + id
 	card = get_api_data_from_url(url)
-	write_cache_card(id, card)
+	write_cache_card(card)
 	return card
 
 
@@ -58,7 +71,7 @@ def load_cards_from_cache(url):
 		card = load_cache_card(id)
 		# if a card isn't cached for some reason, query for it
 		if card == None:
-			card = get_card_from_id(id)
+			card = get_card_from_id(id.split['_'][-1])
 			if card == None:
 				continue
 		cards.append(card)
