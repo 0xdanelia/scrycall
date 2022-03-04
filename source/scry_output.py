@@ -105,6 +105,9 @@ def parse_attr(card, attr_list):
 		# this prints the name of the previous attribute, rather than a value
 		if attr == '^':
 			value = prev_attr
+		# this prints a list of the available attribute names
+		elif attr == '?':
+			value = get_available_attr_names(value)
 		else:
 			value = get_attr_value(value, attr)
 		if value == None:
@@ -113,18 +116,28 @@ def parse_attr(card, attr_list):
 	return str(value)
 
 
+# TODO: consolidate this function and parse_attr() since they share a lot of code
 # generate a print line for each item in the attribute marked with '*'
 def iterate_attr(card, attr_list, print_line):
 	value = card
+	prev_attr = ''
 	attr_replace = '%{'
 	for attr in attr_list:
 		if attr == '*':
 			break
 		# construct a string of the nested attributes up until the '*'
 		attr_replace += attr + '.'
-		value = get_attr_value(value, attr)
+		# this prints the name of the previous attribute, rather than a value
+		if attr == '^':
+			value = prev_attr
+		# this prints a list of the available attribute names
+		elif attr == '?':
+			value = get_available_attr_names(value)
+		else:
+			value = get_attr_value(value, attr)
 		if value == None:
 			return None
+		prev_attr = attr
 
 	results = []
 	# iterate differently based on dicts, lists, strings, etc
@@ -151,4 +164,15 @@ def get_attr_value(data, attr):
 		return data.get(attr)
 	if attr.isdigit():
 		return data[int(attr)]
+	return None
+
+
+# get all names that could be used to iterate an attribute
+# if the attribute is a dictionary, return the keys
+# if it is a list or string, return the list of valid indexes
+def get_available_attr_names(data):
+	if type(data) is dict:
+		return list(data)
+	if type(data) is list or type(data) is str:
+		return list(range(len(data)))
 	return None
