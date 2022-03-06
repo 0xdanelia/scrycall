@@ -23,7 +23,27 @@ def print_cards(cards, formatting):
 		if card_lines == None:
 			continue
 		for card_line in card_lines:
-			lines.append(card_line)
+			
+			# separate newline characters
+			newline_cols = []
+			most_newlines = 0
+			for col in card_line:
+				split_col = col.split('\n')
+				most_newlines = max(most_newlines, len(split_col))
+				newline_cols.append(split_col)
+			
+			# fill the shortest column with whitespace so they are all the same size
+			for newline_col in newline_cols:
+				while len(newline_col) < most_newlines:
+					newline_col.append('')
+			
+			# separate each line to be printed one at a time
+			for i in range(len(newline_cols[0])):
+				line = []
+				for newline_col in newline_cols:
+					line.append(newline_col[i])
+				lines.append(line)
+	
 	if len(lines) < 1:
 		return
 			
@@ -40,7 +60,7 @@ def print_cards(cards, formatting):
 		for i in range(num_cols):
 			print_line = print_line + '{: <' + str(col_widths[i]) + '}'
 		print_line = print_line.format(*column_list)
-		print(print_line)
+		print(print_line.replace('\n', ' ').rstrip(' '))
 
 
 # each card is printed on one line, defined by the formatting string
