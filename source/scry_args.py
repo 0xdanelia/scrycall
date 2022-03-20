@@ -1,40 +1,62 @@
+import sys
+import argparse
+import scry_output
+from scry_output import Attributes
+
 # parse command line input
-def parse_args(args):
-	query = None
-	flags = {}
-	formatting = None
-	
-	for arg in args:
-		# arg is a flag
-		if arg.startswith('--'):
-			flag, value = parse_flag(arg)
-			flags[flag] = value
-		# arg is part of the query
-		else:
-			if query == None:
-				query = parse_query(arg)
-			else:
-				query = query + ' ' + parse_query(arg)
-	
-	# default formatting
-	formatting = flags.get('format')
-	if formatting == None:
-		formatting = '%{name} %| %{type_line} %| %{mana_cost}'
-	
-	return query, flags, formatting
+def parse_args() -> tuple[str, str]:
+    """Parse command line arguments
 
+    Args:
+        args: sys argv
 
-# parse flags from the command line and get their value
-def parse_flag(arg):
-	if arg.startswith('--format='):
-		flag = 'format'
-		value = arg[9:]
+    Returns:
+        query: string you would type in the search bar at scryfall.com
+        formatting: Card output line (with attribute placeholders)
+    """
+    parser = argparse.ArgumentParser(
+        description="Scryfall CLI",
+        epilog="""
+        %n    name
+        %m    mana_cost
+        %c    cmc  (converted mana cost)
+        %y    type_line
+        %p    power
+        %t    toughness
+        %l    loyalty
+        %o    oracle_text
+        %f    flavor_text
+        %%    this will print a literal % instead of interpreting a special character
+        %|    this will separate output into nicely spaced columns
+        """,
+    )
+    parser.add_argument(
+        "query",
+        nargs="*",
+        metavar="query",
+        default=[],
+        help="Scryfall query",
+    )
+    parser.add_argument(
+        "--format",
+        dest="formatting",
+        type=str,
+        default=f"{Attributes.NAME.value} %| {Attributes.TYPE_LINE.value} %| {Attributes.CMC.value}",
+    )
+    parser.add_argument(
+        "--null",
+        dest="null",
+        default=None,
+        help="Print this value when NULL is the property value",
+    )
+    args = parser.parse_args()
+    query = " ".join(args.query)
 
-	return flag, value
+    query.replace("`", "'")
+    scry_output.CUSTOM_NULL = args.null
 
+    if not query:
+        parser.print_help()
+        sys.exit(0)
 
-# parse query text from the command line
-def parse_query(arg):
-	# backticks are replaced with single quotes
-	# otherwise the text is used as-is
-	return arg.replace("`", "'")
+    return query, args.formatting

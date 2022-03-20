@@ -1,5 +1,5 @@
 ## Scrycall
-A linux command line tool for querying the scryfall.com API for Magic cards.
+A command line tool for querying the scryfall.com API for Magic cards. Python3.
 
 <img src="https://i.imgur.com/k2M2bhR.gif">
 
@@ -12,13 +12,13 @@ Scrycall also stores the JSON data in a local cache at `~/.cache/scrycall/` to q
 ### How do I install Scrycall?
 You can download the project using the command `git clone https://github.com/0xdanelia/scrycall`
 
-The project comes with a pre-compiled executable. You can compile the code yourself if you want using https://www.pyinstaller.org/
+The project comes with a pre-compiled linux binary. You can compile the code yourself if you want using `pyinstaller` (.spec file included)
 
 You can run it using the command `path/to/scry [ARGS]` 
 
 Alternatively if you copy the file somewhere in your `$PATH` then you can just use `scry [ARGS]`
 
-You can also just run the python source script using the command `python /path/to/scrycall.py [ARGS]`
+You can also just run the python source script using the command `/path/to/scrycall.py [ARGS]` (alternatively, prefix with `python` if `python3` doesn't resolve)
 
 
 ### How do I use Scrycall?

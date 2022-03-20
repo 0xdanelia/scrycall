@@ -1,21 +1,22 @@
-import urllib.request, urllib.parse, json, time
+import requests
+import requests.utils
+import time
 
-
-first_query = True
+# TODO: Refactor this module out (passthrough)
 
 # get the web address for calling the scryfall api
 def get_api_url_from_query(query):
-	api_url = 'https://api.scryfall.com/cards/search?q='
-	return api_url + urllib.parse.quote_plus(query)
+    return f"https://api.scryfall.com/cards/search?q={requests.utils.requote_uri(query)}"
 
 
-# call the api and return the data
-def get_api_data_from_url(url):
-	# wait 100 milliseconds between calls:  https://scryfall.com/docs/api
-	global first_query
-	if not first_query:
-		time.sleep(0.1)
-	
-	data = json.load(urllib.request.urlopen(url))
-	first_query = False
-	return data
+def get_api_data_from_url(url) -> dict:
+    """Call the api and return the data
+
+    100ms delay between calls per https://scryfall.com/docs/api
+    """
+    time.sleep(0.1)
+    resp = requests.get(url)
+    if not resp.ok:
+        print(resp.text)
+        return {}
+    return resp.json()
