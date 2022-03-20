@@ -7,15 +7,29 @@ from scry_cache import (
 )
 
 
-# get a list of cards from a query string
 def get_cards_from_query(query) -> list[str]:
+    """Get a list of cards from a query string
+
+    Args:
+        query: query string
+
+    Returns:
+        List of cards
+    """
     url = get_api_url_from_query(query)
     card_list = get_cards_from_url(url)
     return card_list
 
 
-# get a list of cards from an api url
 def get_cards_from_url(url) -> list[str]:
+    """Get a list of cards from an api url
+
+    Args:
+        url: url
+
+    Returns:
+        list of cards
+    """
     card_list = load_cards_from_cache(url)
     if not card_list:
         json_data = get_api_data_from_url(url)
@@ -27,8 +41,15 @@ def get_cards_from_url(url) -> list[str]:
 
 # TODO: this makes some assumptions about the shape of the data
 # TODO: make this less clunky
-# call an api url found nested in the card data
 def get_uri_attribute_from_url(url):
+    """Call an api url found nested in the card data
+
+    Args:
+        url: url
+
+    Returns:
+        json data
+    """
     json_data = load_cache_url(url)
     if json_data == None:
         json_data = get_api_data_from_url(url)

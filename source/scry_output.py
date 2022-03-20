@@ -1,8 +1,7 @@
-import time
 from enum import Enum
 from typing import Optional, Union
 import re
-import string
+from collections import defaultdict
 
 from scry_data import get_uri_attribute_from_url
 
@@ -38,12 +37,16 @@ ATTR_CODES = {
     "%l": Attributes.LOYALITY.value,
     "%o": Attributes.ORACLE_TEXT.value,
     "%f": Attributes.FLAVOR_TEXT.value,
+    "%|": "%{spacer}",
 }
 ATTR_DELIM = "."
-CUSTOM_NULL = None
+CUSTOM_NULL = ""
+CARD_SUBLINES: dict[int, list] = defaultdict(
+    list
+)  # Hacky. Tracks the sublines for each card
 
 
-def print_cards(cards: list[str], formatting: str) -> None:
+def print_cards(cards: list[dict], formatting: str) -> None:
     """Print each card line-by-line
 
     Args:
@@ -54,43 +57,9 @@ def print_cards(cards: list[str], formatting: str) -> None:
     for card in cards:
         for line in card_lines(card, formatting):
             lines.append(line)
-            # # separate newline characters
-            # newline_cols = []
-            # most_newlines = 0
-            # for col in line:
-            #     split_col = col.split("\n")
-            #     most_newlines = max(most_newlines, len(split_col))
-            #     newline_cols.append(split_col)
-
-            # # fill the shortest column with whitespace so they are all the same size
-            # for newline_col in newline_cols:
-            #     while len(newline_col) < most_newlines:
-            #         newline_col.append("")
-
-            # # separate each line to be printed one at a time
-            # for i in range(len(newline_cols[0])):
-            #     line = []
-            #     for newline_col in newline_cols:
-            #         line.append(newline_col[i])
-            #     lines.append(line)
 
     for line in lines:
         print(line)
-
-    # # calculate column widths
-    # num_cols = len(lines[0])
-    # col_widths = [0] * num_cols
-    # for row in lines:
-    #     for w in range(num_cols):
-    #         col_widths[w] = max(len(row[w]), col_widths[w])
-
-    # # print the data
-    # for column_list in lines:
-    #     print_line = ""
-    #     for i in range(num_cols):
-    #         print_line = print_line + "{: <" + str(col_widths[i]) + "}"
-    #     print_line = print_line.format(*column_list)
-    #     print(print_line.replace("\n", " ").rstrip(" "))
 
 
 def attr_data(data: dict, attributes: list[Union[str, int]]):
@@ -128,17 +97,21 @@ def find_attrs(
         print(str(type(prev_data)))
         print(prev_data)
         if isinstance(prev_data, dict):
-            value = ",".join([v or CUSTOM_NULL for v in prev_data.values()])
+            vals = [v or CUSTOM_NULL for v in prev_data.values()]
         elif isinstance(prev_data, list):
-            value = ",".join(prev_data)
+            vals = prev_data
+        for i, v in enumerate(vals):
+            CARD_SUBLINES[i].append(v)
     elif attr == "?":
         if isinstance(prev_data, dict):
-            value = ",".join(list(prev_data.keys()))
+            vals = list(prev_data.keys())
         elif isinstance(prev_data, list):
-            value = ",".join([str(i) for i in range(0, len(prev_data))])
-    # If the previous value is a url,  query it
-    elif attr == "/":
-        value = get_uri_attribute_from_url(value)
+            vals = [str(i) for i in range(0, len(prev_data))]
+        for i, v in enumerate(vals):
+            CARD_SUBLINES[i].append(v)
+    elif attr == "spacer":
+        # Special attribute
+        value = "\n"
     else:
         if isinstance(data[attr], (dict, list)):
             if (
@@ -156,6 +129,8 @@ def find_attrs(
                     value = CUSTOM_NULL
         else:
             value = data[attr]
+            if value.startswith("http"):
+                value = get_uri_attribute_from_url(value)
     return value
 
 
@@ -207,10 +182,33 @@ def card_lines(card: dict, formatting: str) -> list[str]:
     # Initialize output line
     print(f"{formatting}")
 
-    return [re.sub(r"%+[^%\s]*", lambda x: marker_replace(card, x), formatting)]
+    CARD_SUBLINES.clear()
+    lines = [
+        re.sub(r"%+[^%\s]*", lambda x: marker_replace(card, x), formatting)
+    ]
+    if not lines[0].strip():  # If first line is empty, just print the sublines
+        lines.clear()
+
+    # TODO: Better way to do this..
+    if CARD_SUBLINES:
+        col_widths = [0] * len(list(CARD_SUBLINES.values())[0])
+        print(col_widths)
+        for line_items in CARD_SUBLINES.values():
+            for i, item in enumerate(line_items):
+                print(f"{i}, {item}")
+                col_widths[i] = max(col_widths[i], len(str(item)))
+        for idx, line_items in CARD_SUBLINES.items():
+            lines.append(
+                " ".join(
+                    [
+                        f"{item:{col_widths[c]}}"
+                        for c, item in enumerate(line_items)
+                    ]
+                )
+            )
+    return lines
 
 
-#
 def get_available_attr_names(data) -> Optional[list]:
     """Get all names that could be used to iterate an attribute
 

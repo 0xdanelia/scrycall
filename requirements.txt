@@ -2,3 +2,4 @@ pyinstaller>=4.10
 black>=22.1
 mypy>=0.941
 requests>=2.27
+types-requests>=2.27
