@@ -38,6 +38,7 @@ def parse_args() -> tuple[str, str]:
         help="Scryfall query",
     )
     parser.add_argument(
+        "-f",
         "--format",
         dest="formatting",
         type=str,

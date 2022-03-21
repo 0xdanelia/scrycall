@@ -53,10 +53,29 @@ def print_cards(cards: list[dict], formatting: str) -> None:
         cards: _description_
         formatting (_type_): _description_
     """
-    lines = []
+    lines: list[str] = []
+    base_line_idxs = []
     for card in cards:
+        base_line_idxs.append(len(lines))  # Used to space newlines later
         for line in card_lines(card, formatting):
             lines.append(line)
+
+    # Adjust column spacing
+    for i in range(
+        0, lines[base_line_idxs[0]].count("\n")
+    ):  # Number of newlines
+        newline_idxs = []  # Only for base lines
+        for i, idx in enumerate(base_line_idxs):
+            newline_idxs.append(lines[idx].find("\n"))
+        for i, idx in enumerate(base_line_idxs):
+            # insert spaces to pad
+            pad_amount = max(newline_idxs) - newline_idxs[i]
+            lines[idx] = (
+                lines[idx][: newline_idxs[i]]
+                + " " * pad_amount
+                + lines[idx][newline_idxs[i] :]
+            )
+            lines[idx] = lines[idx].replace("\n", "", 1)
 
     for line in lines:
         print(line)
@@ -66,7 +85,6 @@ def attr_data(data: dict, attributes: list[Union[str, int]]):
     """Get data from a data structure, drilling down."""
     rval = data
     for attr in attributes:
-        print(f"rval attr: {attr}")
         rval = rval[attr]
     return rval
 
@@ -94,8 +112,6 @@ def find_attrs(
     print(f"attr: {attr}")
     if attr == "*":
         # Assume dict or list
-        print(str(type(prev_data)))
-        print(prev_data)
         if isinstance(prev_data, dict):
             vals = [v or CUSTOM_NULL for v in prev_data.values()]
         elif isinstance(prev_data, list):
@@ -109,11 +125,17 @@ def find_attrs(
             vals = [str(i) for i in range(0, len(prev_data))]
         for i, v in enumerate(vals):
             CARD_SUBLINES[i].append(v)
+    elif attr == "/":
+        print("HELLO")
+        # Resolve URL
+        if prev_data.startswith("http"):
+            value = get_uri_attribute_from_url(prev_data)
     elif attr == "spacer":
         # Special attribute
         value = "\n"
     else:
-        if isinstance(data[attr], (dict, list)):
+        drill_values.append(attr)  # No marker, assume property name
+        if isinstance(attr_data(data, drill_values), (dict, list)):
             if (
                 attr_level == len(attributes) - 1
             ):  # End of attribute list, MUST resolve to a single value
@@ -121,16 +143,15 @@ def find_attrs(
                     "Endpoint is a dict/list : Need to use attribute markers!"
                 )
             else:
-                drill_values.append(attr)
                 value = find_attrs(
                     data, attributes, attr_level + 1, drill_values
                 )
                 if value == None:
                     value = CUSTOM_NULL
         else:
-            value = data[attr]
-            if value.startswith("http"):
-                value = get_uri_attribute_from_url(value)
+            value = str(attr_data(data, drill_values))
+            if attr_level != len(attributes) - 1:  # keep going..
+                find_attrs(data, attributes, attr_level + 1, drill_values)
     return value
 
 
@@ -162,7 +183,6 @@ def marker_replace(card: dict, match: re.Match) -> str:
             raise FormatAttributeError(
                 f"Could not find an attribute in {marker}!"
             ) from e
-        print(attrs)
         repl_str += find_attrs(card, attrs, 0, [])
     else:  # raw_marker was all %s
         repl_str += marker
@@ -172,6 +192,8 @@ def marker_replace(card: dict, match: re.Match) -> str:
 def card_lines(card: dict, formatting: str) -> list[str]:
     """Return the printable line for a card.
 
+    Note: Uses a global to track printing sublines
+
     Args:
         card: Card data (json dict)
         formatting: Formatting string
@@ -179,9 +201,6 @@ def card_lines(card: dict, formatting: str) -> list[str]:
     Returns:
         List of printable lines
     """
-    # Initialize output line
-    print(f"{formatting}")
-
     CARD_SUBLINES.clear()
     lines = [
         re.sub(r"%+[^%\s]*", lambda x: marker_replace(card, x), formatting)
@@ -192,10 +211,8 @@ def card_lines(card: dict, formatting: str) -> list[str]:
     # TODO: Better way to do this..
     if CARD_SUBLINES:
         col_widths = [0] * len(list(CARD_SUBLINES.values())[0])
-        print(col_widths)
         for line_items in CARD_SUBLINES.values():
             for i, item in enumerate(line_items):
-                print(f"{i}, {item}")
                 col_widths[i] = max(col_widths[i], len(str(item)))
         for idx, line_items in CARD_SUBLINES.items():
             lines.append(
