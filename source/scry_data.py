@@ -1,10 +1,10 @@
-from scry_api import get_api_url_from_query, get_api_data_from_url
-from scry_cache import (
-    load_cache_url,
-    load_cache_card,
-    write_cache_url,
-    write_cache_card,
-)
+from scry_cache import UrlCardCache, CardCache
+import time
+import requests
+import requests.utils
+
+URL_CACHE = UrlCardCache()
+CARD_CACHE = CardCache()
 
 
 def get_cards_from_query(query) -> list[str]:
@@ -16,32 +16,14 @@ def get_cards_from_query(query) -> list[str]:
     Returns:
         List of cards
     """
-    url = get_api_url_from_query(query)
-    card_list = get_cards_from_url(url)
-    return card_list
-
-
-def get_cards_from_url(url) -> list[str]:
-    """Get a list of cards from an api url
-
-    Args:
-        url: url
-
-    Returns:
-        list of cards
-    """
-    card_list = load_cards_from_cache(url)
-    if not card_list:
-        json_data = get_api_data_from_url(url)
-        if json_data:
-            card_list = get_cards_from_json_data(json_data)
-            save_to_cache(url, card_list)
+    url = f"https://api.scryfall.com/cards/search?q={requests.utils.requote_uri(query)}"
+    card_list = load_cards(url)
     return card_list
 
 
 # TODO: this makes some assumptions about the shape of the data
 # TODO: make this less clunky
-def get_uri_attribute_from_url(url):
+def get_uri_attribute(url):
     """Call an api url found nested in the card data
 
     Args:
@@ -50,56 +32,85 @@ def get_uri_attribute_from_url(url):
     Returns:
         json data
     """
-    json_data = load_cache_url(url)
+    json_data = URL_CACHE.load_item(url)
     if json_data == None:
         json_data = get_api_data_from_url(url)
-        write_cache_url(url, [json_data])
-        write_cache_card(json_data)
+        URL_CACHE.store_url(url, [json_data])
     else:
-        json_data = load_cache_card(json_data[0])
+        json_data = CARD_CACHE.load_item(json_data[0])
     return json_data
 
 
-def get_card_from_id(id):
-    """get a single card from the api"""
-    url = "https://api.scryfall.com/cards/" + id
-    card = get_api_data_from_url(url)
-    write_cache_card(card)
-    return card
+def get_card_from_uuid(uuid: str) -> dict:
+    """Get a single card from the api.
+
+    Args:
+        uuid: Scryfall UUID
+
+    Returns:
+        JSON data
+    """
+    return get_cards_from_json_data(
+        get_api_data_from_url(f"https://api.scryfall.com/cards/{uuid}")
+    )
 
 
-# get a list of cards from the api json data
 def get_cards_from_json_data(data):
+    """Get a list of cards from the api json data.
+
+    Args:
+        data: Card JSON data from Scryfall
+
+    Returns:
+        List of card
+    """
     cards = data["data"]
     if data["has_more"]:
         next_url = data["next_page"]
-        cards += get_cards_from_url(next_url)
+        cards += load_cards(next_url)
     return cards
 
 
-# save card data to local cache
-def save_to_cache(url, cards):
-    # cache each card individully
-    for card in cards:
-        write_cache_card(card)
-    # cache the list of card ids tied to the url
-    write_cache_url(url, cards)
+def load_cards(url, use_cache: bool = True) -> list[str]:
+    """Load cards
 
+    Args:
+        url: URL to load from
+        use_cache: Enable the use of the cache
 
-# load cards from local cache
-def load_cards_from_cache(url) -> list[str]:
-    cached_card_ids = load_cache_url(url)
-    if cached_card_ids == None:
-        return []
+    If the card does not exist in the cache, it is queried for.
+    """
     # the query url is tied to a list of card ids
     # each card id is tied to cached json data for the card itself
     cards = []
-    for id in cached_card_ids:
-        card = load_cache_card(id)
-        # if a card isn't cached for some reason, query for it
-        if card == None:
-            card = get_card_from_id(id.split["_"][-1])
-            if card == None:
-                continue
-        cards.append(card)
+    if use_cache:
+        try:
+            for card_uid in URL_CACHE.load_item(URL_CACHE.__class__.uid(url)):
+                card = CARD_CACHE.load_item(card_uid)
+                if not card:
+                    card = get_card_from_uuid(card_uid.split["_"][-1])
+                    if card:
+                        CARD_CACHE.store_card(card)
+                cards.append(card)
+        except:
+            pass
+    if not cards:
+        json_data = get_api_data_from_url(url)
+        if json_data:
+            cards = get_cards_from_json_data(json_data)
+            if use_cache:
+                URL_CACHE.store_url(url, cards)
     return cards
+
+
+def get_api_data_from_url(url) -> dict:
+    """Call the api and return the data
+
+    100ms delay between calls per https://scryfall.com/docs/api
+    """
+    time.sleep(0.1)
+    resp = requests.get(url)
+    if not resp.ok:
+        print(resp.text)
+        return {}
+    return resp.json()

@@ -47,7 +47,7 @@ def parse_args() -> tuple[str, str]:
     parser.add_argument(
         "--null",
         dest="null",
-        default=None,
+        default="",
         help="Print this value when NULL is the property value",
     )
     args = parser.parse_args()

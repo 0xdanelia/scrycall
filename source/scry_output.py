@@ -3,7 +3,7 @@ from typing import Optional, Union
 import re
 from collections import defaultdict
 
-from scry_data import get_uri_attribute_from_url
+from scry_data import get_uri_attribute
 
 
 class FormatError(Exception):
@@ -41,6 +41,7 @@ ATTR_CODES = {
 }
 ATTR_DELIM = "."
 CUSTOM_NULL = ""
+SPACER_MARKER = "\n"
 CARD_SUBLINES: dict[int, list] = defaultdict(
     list
 )  # Hacky. Tracks the sublines for each card
@@ -62,11 +63,11 @@ def print_cards(cards: list[dict], formatting: str) -> None:
 
     # Adjust column spacing
     for i in range(
-        0, lines[base_line_idxs[0]].count("\n")
+        0, lines[base_line_idxs[0]].count(SPACER_MARKER)
     ):  # Number of newlines
         newline_idxs = []  # Only for base lines
         for i, idx in enumerate(base_line_idxs):
-            newline_idxs.append(lines[idx].find("\n"))
+            newline_idxs.append(lines[idx].find(SPACER_MARKER))
         for i, idx in enumerate(base_line_idxs):
             # insert spaces to pad
             pad_amount = max(newline_idxs) - newline_idxs[i]
@@ -75,7 +76,7 @@ def print_cards(cards: list[dict], formatting: str) -> None:
                 + " " * pad_amount
                 + lines[idx][newline_idxs[i] :]
             )
-            lines[idx] = lines[idx].replace("\n", "", 1)
+            lines[idx] = lines[idx].replace(SPACER_MARKER, "", 1)
 
     for line in lines:
         print(line)
@@ -109,7 +110,7 @@ def find_attrs(
     value = ""
     attr = attributes[attr_level]
     prev_data = attr_data(data, drill_values)
-    print(f"attr: {attr}")
+
     if attr == "*":
         # Assume dict or list
         if isinstance(prev_data, dict):
@@ -126,19 +127,19 @@ def find_attrs(
         for i, v in enumerate(vals):
             CARD_SUBLINES[i].append(v)
     elif attr == "/":
-        print("HELLO")
         # Resolve URL
         if prev_data.startswith("http"):
-            value = get_uri_attribute_from_url(prev_data)
+            new_data = get_uri_attribute(prev_data)
+            # Switch to resolved URL data
+            value = find_attrs(new_data, attributes[attr_level + 1 :], 0, [])
     elif attr == "spacer":
-        # Special attribute
-        value = "\n"
+        # Special attribute for column spacing
+        value = SPACER_MARKER
     else:
         drill_values.append(attr)  # No marker, assume property name
         if isinstance(attr_data(data, drill_values), (dict, list)):
-            if (
-                attr_level == len(attributes) - 1
-            ):  # End of attribute list, MUST resolve to a single value
+            # End of attribute list, MUST resolve to a single value
+            if attr_level == len(attributes) - 1:
                 raise Exception(
                     "Endpoint is a dict/list : Need to use attribute markers!"
                 )
@@ -150,8 +151,12 @@ def find_attrs(
                     value = CUSTOM_NULL
         else:
             value = str(attr_data(data, drill_values))
-            if attr_level != len(attributes) - 1:  # keep going..
-                find_attrs(data, attributes, attr_level + 1, drill_values)
+            # keep going.. (might be URl to resolve)
+            if attr_level != len(attributes) - 1:
+                value = find_attrs(
+                    data, attributes, attr_level + 1, drill_values
+                )
+                print(value)
     return value
 
 
@@ -208,7 +213,6 @@ def card_lines(card: dict, formatting: str) -> list[str]:
     if not lines[0].strip():  # If first line is empty, just print the sublines
         lines.clear()
 
-    # TODO: Better way to do this..
     if CARD_SUBLINES:
         col_widths = [0] * len(list(CARD_SUBLINES.values())[0])
         for line_items in CARD_SUBLINES.values():
@@ -218,28 +222,9 @@ def card_lines(card: dict, formatting: str) -> list[str]:
             lines.append(
                 " ".join(
                     [
-                        f"{item:{col_widths[c]}}"
+                        f"{item:<{col_widths[c]}}"
                         for c, item in enumerate(line_items)
                     ]
                 )
             )
     return lines
-
-
-def get_available_attr_names(data) -> Optional[list]:
-    """Get all names that could be used to iterate an attribute
-
-    If the attribute is a dictionary, return the keys
-    if it is a list or string, return the list of valid indexes
-
-    Args:
-        data: data
-
-    Returns:
-        List of available attribute names or None
-    """
-    if type(data) is dict:
-        return list(data)
-    if type(data) is list or type(data) is str:
-        return list(range(len(data)))
-    return None

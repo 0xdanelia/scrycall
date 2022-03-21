@@ -2,59 +2,74 @@ import json
 import hashlib
 import re
 import pathlib
-
-CACHE_DIR_URL = pathlib.Path.home() / ".cache/scrycall/api/"
-CACHE_DIR_CARD = pathlib.Path.home() / ".cache/scrycall/card/"
-
-
-def write_cache_url(url, cards):
-    path = CACHE_DIR_URL / get_url_cache_name(url)
-    ids = [get_card_cache_name(card) for card in cards]
-    write_cache_to_path(path, ids)
+from abc import ABCMeta, abstractmethod
+from typing import Any
 
 
-def write_cache_card(card):
-    path = CACHE_DIR_CARD / get_card_cache_name(card)
-    write_cache_to_path(path, card)
+class Cache(metaclass=ABCMeta):
+    def __init__(self, path: pathlib.Path):
+        self.path = path
+        if not self.path.is_dir():
+            self.path.mkdir(parents=True, exist_ok=True)
+
+    @abstractmethod
+    def uid(cls, item: Any) -> str:
+        """Unique ID for the item
+
+        Args:
+            item: Item name
+
+        Returns:
+            str: unique ID
+        """
+
+    def _write_content_to_file(self, path, data):
+        with open(path, "w") as cachefile:
+            json.dump(data, cachefile, indent=4)
+
+    def _read_from_file(self, path):
+        try:
+            with open(path, "r") as cachefile:
+                return json.load(cachefile)
+        except:
+            return None
+
+    def load_item(self, uid: str):
+        """Load item by its unique id
+
+        Args:
+            uid: Unique ID
+        """
+        path = self.path / uid
+        return self._read_from_file(path)
 
 
-def load_cache_url(url):
-    path = CACHE_DIR_URL / get_url_cache_name(url)
-    return load_cache_from_path(path)
+class UrlCardCache(Cache):
+    """Store lists of Card cache IDs"""
+
+    def __init__(self):
+        super().__init__(pathlib.Path.home() / ".cache/scrycall/api/")
+
+    @classmethod
+    def uid(cls, url) -> str:
+        return hashlib.md5(url.encode()).hexdigest()
+
+    def store_url(self, url, cards: list[dict]):
+        path = self.path / self.uid(url)
+        ids = [CardCache.uid(card) for card in cards]
+        self._write_content_to_file(path, ids)
 
 
-def load_cache_card(id):
-    path = CACHE_DIR_CARD / id
-    return load_cache_from_path(path)
+class CardCache(Cache):
+    def __init__(self):
+        super().__init__(pathlib.Path.home() / ".cache/scrycall/card/")
 
+    @classmethod
+    def uid(cls, card: dict) -> str:
+        name = card["name"].replace(" ", "_")
+        name = re.sub("[^a-zA-Z0-9_]", "-", name)
+        return f"{name}_{card['id']}"
 
-def write_cache_to_path(path, data):
-    check_cache_dirs()
-    with open(path, "w") as cachefile:
-        json.dump(data, cachefile, indent=4)
-
-
-def load_cache_from_path(path):
-    check_cache_dirs()
-    try:
-        with open(path, "r") as cachefile:
-            return json.load(cachefile)
-    except:
-        return None
-
-
-def check_cache_dirs():
-    """Create cache directories, if they don't exist"""
-    for p in (CACHE_DIR_URL, CACHE_DIR_CARD):
-        if not p.is_dir():
-            p.mkdir(parents=True, exist_ok=True)
-
-
-def get_url_cache_name(url):
-    return hashlib.md5(url.encode()).hexdigest()
-
-
-def get_card_cache_name(card):
-    name = card["name"].replace(" ", "_")
-    name = re.sub("[^a-zA-Z0-9_]", "-", name)
-    return f"{name}_{card['id']}"
+    def store_card(self, card: dict):
+        path = self.path / self.uid(card)
+        self._write_content_to_file(path, card)
