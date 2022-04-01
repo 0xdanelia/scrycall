@@ -97,8 +97,7 @@ def find_attrs(
 
     Attribute Markers:
         ? = Available property names
-        * = Iterate properties
-        ^ = Print previous property
+        * = Iterate properties values
 
     Args:
         card: data
@@ -208,7 +207,9 @@ def card_lines(card: dict, formatting: str) -> list[str]:
     """
     CARD_SUBLINES.clear()
     lines = [
-        re.sub(r"%+[^%\s]*", lambda x: marker_replace(card, x), formatting)
+        re.sub(
+            r"%+(\{[^\}]+\}|.)", lambda x: marker_replace(card, x), formatting
+        )
     ]
     if not lines[0].strip():  # If first line is empty, just print the sublines
         lines.clear()
