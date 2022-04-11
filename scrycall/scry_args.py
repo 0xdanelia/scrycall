@@ -1,40 +1,68 @@
-# parse command line input
-def parse_args(args):
-	query = None
-	flags = {}
-	formatting = None
-	
-	for arg in args:
-		# arg is a flag
-		if arg.startswith('--'):
-			flag, value = parse_flag(arg)
-			flags[flag] = value
-		# arg is part of the query
-		else:
-			if query == None:
-				query = parse_query(arg)
-			else:
-				query = query + ' ' + parse_query(arg)
-	
-	# default formatting
-	formatting = flags.get('format')
-	if formatting == None:
-		formatting = '%{name} %| %{type_line} %| %{mana_cost}'
-	
-	return query, flags, formatting
+import argparse
+from .scry_output import Attributes
 
 
-# parse flags from the command line and get their value
-def parse_flag(arg):
-	if arg.startswith('--format='):
-		flag = 'format'
-		value = arg[9:]
-
-	return flag, value
+class ArgumentError(Exception):
+    """Error with input arguments"""
 
 
-# parse query text from the command line
-def parse_query(arg):
-	# backticks are replaced with single quotes
-	# otherwise the text is used as-is
-	return arg.replace("`", "'")
+def parse_args(args: list) -> argparse.Namespace:
+    """Parse command line arguments
+
+    Args:
+        args: sys argv
+
+    Returns:
+        parsed_args: Args namespace
+    """
+    parser = _parser()
+    parsed_args = parser.parse_args(args)
+
+    parsed_args.query = " ".join(parsed_args.query)
+    parsed_args.query.replace("`", "'")
+
+    if not parsed_args.query:
+        parser.print_help()
+        raise ArgumentError("No query provided!")
+
+    return parsed_args
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Scryfall CLI",
+        epilog="""
+        %n    name
+        %m    mana_cost
+        %c    cmc  (converted mana cost)
+        %y    type_line
+        %p    power
+        %t    toughness
+        %l    loyalty
+        %o    oracle_text
+        %f    flavor_text
+        %%    this will print a literal % instead of interpreting a special character
+        %|    this will separate output into nicely spaced columns
+        """,
+    )
+    parser.add_argument(
+        "query",
+        nargs="*",
+        metavar="query",
+        default=[],
+        help="Scryfall query",
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        dest="formatting",
+        type=str,
+        default=f"{Attributes.NAME.value} %| {Attributes.TYPE_LINE.value} %| {Attributes.CMC.value}",
+    )
+    parser.add_argument(
+        "--null",
+        dest="null",
+        default="",
+        help="Print this value when NULL is the property value",
+    )
+    return parser

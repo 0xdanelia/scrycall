@@ -1,27 +1,24 @@
-## Scrycall
-A linux command line tool for querying the scryfall.com API for Magic cards.
+# Scrycall
+A command line tool for querying the scryfall.com API for Magic cards.
 
 <img src="https://i.imgur.com/k2M2bhR.gif">
 
-### What does Scrycall do?
-Scrycall makes it easy to search for MTG cards from the linux command line. It prints the card information of your choice to the terminal, allowing for easy integration with other linux tools using pipes. Scrycall uses https://scryfall.com/ to query for cards which are returned as JSON objects. You can parse the JSON using special format parameters (see below) to print any information you want about the cards you query.
+## What does Scrycall do?
+Scrycall makes it easy to search for MTG cards from the command line. It prints the card information of your choice to the terminal, allowing for easy integration with other tools using pipes. Scrycall uses https://scryfall.com/ to query for cards which are returned as JSON objects. You can parse the JSON using special format parameters (see below) to print any information you want about the cards you query.
 
 Scrycall also stores the JSON data in a local cache at `~/.cache/scrycall/` to quickly access for repeated queries. The data is considered stale after 24 hours and Scrycall will automatically query the API again for a refresh if you try to use stale data. You can manage your cache using some command line arguments (see below).
 
 
-### How do I install Scrycall?
+## How do I install Scrycall?
 You can download the project using the command `git clone https://github.com/0xdanelia/scrycall`
 
-The project comes with a pre-compiled executable. You can compile the code yourself if you want using https://www.pyinstaller.org/
+You can compile the code into an executable using `pyinstaller scry.spec`.
 
 You can run it using the command `path/to/scry [ARGS]` 
 
-Alternatively if you copy the file somewhere in your `$PATH` then you can just use `scry [ARGS]`
+You can also just run the python source script using the command `scrycall.py [ARGS]` (note: prefix with `python` if `python3` doesn't resolve)
 
-You can also just run the python source script using the command `python /path/to/scrycall.py [ARGS]`
-
-
-### How do I use Scrycall?
+## How do I use Scrycall?
 
 First familiarize yourself with the Scryfall search syntax at https://scryfall.com/docs/syntax
 
@@ -46,7 +43,7 @@ You can also pipe the output into another program. For example, use Scrycall to 
 ```
 The Scryfall.com developers request that you add a delay of 50-100 milliseconds when making multiple rapid calls to the api. Scrycall automatically adds this delay between multiple calls within the program, but you are on your own when making calls elsewhere.
 
-### What else can I print about a card?
+## What else can I print about a card?
 
 You can use the argument `--format=` or `--f=` to print different information about the cards that the query returns. Within the format string  `%` is a special character used to indicate certain parameters based on the JSON card objects. Be sure to surround your format string in quotes "" if it contains any whitespace. The special parameters are:
 ```
@@ -102,11 +99,21 @@ Some properties are web addresses for an api call to another object. The api wil
 Unhinged was released 2004-11-19
 ```
 
-### What other arguments are there?
+## What other arguments are there?
 
 `--null=` or `--n=`
 
 When a card property in `--format=` is null or empty, print this custom output in its place. This string can use the same `%` format characters as `--format=` except it cannot contain `%|` for column seperation or `%[*]` for iterating. If this text contains any null or empty properties, print "" in its place.
+
+`--help` or `--h`
+
+Print some helpful information like you see here.
+
+`--help-format`
+
+Print helpful information specific to the `--format=` and `--null=` argument syntax.
+
+### Cache commands
 
 `--cache-only` or `--c`
 
@@ -128,12 +135,9 @@ Search the local cache and delete any stale data.
 
 Delete everything from the local cache.
 
-`--help` or `--h`
+## Testing
 
-Print some helpful information like you see here.
+To run the unittests: `python3 -m unittest -b`
 
-`--help-format`
-
-Print helpful information specific to the `--format=` and `--null=` argument syntax.
-
+To run `mypy` static analysis: `mypy scrycall`
 
