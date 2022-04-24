@@ -1,5 +1,5 @@
 import time
-from scry_data import get_uri_attribute_from_url
+from scry_data import get_json_data_from_url
 
 # shortcuts for printing card attrobutes in the format string
 ATTR_CODES = {
@@ -23,7 +23,7 @@ def print_cards(cards, formatting):
         if card_lines == None:
             continue
         for card_line in card_lines:
-            
+
             # separate newline characters
             newline_cols = []
             most_newlines = 0
@@ -31,29 +31,29 @@ def print_cards(cards, formatting):
                 split_col = col.split('\n')
                 most_newlines = max(most_newlines, len(split_col))
                 newline_cols.append(split_col)
-            
+
             # fill the shortest column with whitespace so they are all the same size
             for newline_col in newline_cols:
                 while len(newline_col) < most_newlines:
                     newline_col.append('')
-            
+
             # separate each line to be printed one at a time
             for i in range(len(newline_cols[0])):
                 line = []
                 for newline_col in newline_cols:
                     line.append(newline_col[i])
                 lines.append(line)
-    
+
     if len(lines) < 1:
         return
-            
+
     # calculate column widths
     num_cols = len(lines[0])
     col_widths = [0] * num_cols
     for row in lines:
         for w in range(num_cols):
             col_widths[w] = max(len(row[w]), col_widths[w])
-    
+
     # print the data
     for column_list in lines:
         print_line = ''
@@ -73,11 +73,11 @@ def generate_print_lines(card, formatting):
     print_line = print_line.replace('%%', percent_placeholder)
     # with literal % characters removed from the formatting string,
     # it is easier to process formatted % characters
-    
+
     # replace %x shortcuts with full %{attr} name
     for attr_code in ATTR_CODES:
         print_line = print_line.replace(attr_code, ATTR_CODES[attr_code])
-    
+
     # get %{attr} values
     while True:
         attr_name = get_next_attr_name(print_line)
@@ -94,12 +94,12 @@ def generate_print_lines(card, formatting):
             for i in range(len(iterated_list)):
                 iterated_list[i] = [w.replace(percent_placeholder, '%') for w in iterated_list[i]]
             return iterated_list
-        
+
         attr_value = parse_attr(card, attr_list)
         if attr_value == None:
             return None
         print_line = print_line.replace('%{' + attr_name + '}', attr_value)
-    
+
     print_line = print_line.split('%|')
     print_line = [w.replace(percent_placeholder, '%') for w in print_line]
     return [print_line]
@@ -131,12 +131,12 @@ def parse_attr(card, attr_list):
             value = get_available_attr_names(value)
         # this queries the api if the previous value is a url
         elif attr == '/':
-            value = get_uri_attribute_from_url(value)
+            value = get_json_data_from_url(value)
         else:
             value = get_attr_value(value, attr)
         if value == None:
             return None
-        
+
         prev_attr = attr
     return str(value)
 
@@ -173,7 +173,7 @@ def iterate_attr(card, attr_list, print_line):
         items = value.keys()
     else:
         items = range(len(value))
-    
+
     for item in items:
         # create a new print line for each element in the itterated attribute
         # each element's name replaces the '*' on that line

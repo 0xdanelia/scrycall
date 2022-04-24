@@ -4,28 +4,22 @@ CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'
 CACHE_DIR_URL = CACHE_DIR + 'url/'
 
 
-def write_url_to_cache(url, data):
+def write_url_to_cache(url, data_list):
     path = CACHE_DIR_URL + get_url_cache_name(url)
-    ids = []
-    for obj in data:
-        ids.append(get_cache_path_from_object(obj))
-    write_to_cache(path, ids)
+    cached_data_files = []
+    for data in data_list:
+        # save each data object in its own file, then save a list of those filenames
+        write_json_to_cache(data)
+        cached_data_files.append(get_cache_path_from_object(data))
+    _write_to_cache(path, cached_data_files)
 
 
 def write_json_to_cache(data):
     path = CACHE_DIR + get_cache_path_from_object(data)
-    write_to_cache(path, data)
+    _write_to_cache(path, data)
 
 
-def get_cache_path_from_object(obj):
-    obj_type = obj.get('object', 'misc')
-    obj_name = obj.get('name', '').replace(' ', '_')
-    obj_name = re.sub('[^a-zA-Z0-9_]', '-', obj_name)
-    obj_id = obj.get('id')
-    return f'{obj_type}/{obj_name}_{obj_id}'
-
-
-def write_to_cache(path, data):
+def _write_to_cache(path, data):
     dir_path = os.path.split(path)[0]
     if not os.path.isdir(dir_path):
         os.makedirs(dir_path)
@@ -35,15 +29,22 @@ def write_to_cache(path, data):
 
 def load_url_from_cache(url):
     path = CACHE_DIR_URL + get_url_cache_name(url)
-    return load_from_cache(path)
+    # url caches contain a list of filenames, where each file contains cached JSON data
+    cache_filenames = _load_from_cache(path)
+    if not cache_filenames:
+        return None
+    data = []
+    for filename in cache_filenames:
+        data.append(load_json_from_cache(filename))
+    return data
 
 
-def load_json_from_cache(id):
-    path = CACHE_DIR + id
-    return load_from_cache(path)
+def load_json_from_cache(filename):
+    path = CACHE_DIR + filename
+    return _load_from_cache(path)
 
 
-def load_from_cache(path):
+def _load_from_cache(path):
     try:
         with open(path, 'r') as cachefile:
             return json.load(cachefile)
@@ -52,4 +53,31 @@ def load_from_cache(path):
 
 
 def get_url_cache_name(url):
+    # each cached url gets a unique filename
+    # to avoid issues with long urls and/or special characters, a hash is used instead of the url string
     return hashlib.md5(url.encode()).hexdigest()
+
+
+def get_cache_path_from_object(obj):
+    # organize cache by object type, and construct a unique filename for each object type
+    # see: "TYPES & METHODS" https://scryfall.com/docs/api/
+    obj_name = ''
+    obj_id = ''
+    obj_type = obj.get('object', 'None')
+
+    if obj_type == 'card' or obj_type == 'set':
+        obj_name = obj.get('name', '')
+        obj_id = obj.get('id', '')
+
+    elif obj_type == 'ruling':
+        obj_name = obj.get('comment', '')
+        obj_id = obj.get('oracle_id', '')
+
+    elif obj_type == 'card_symbol':
+        obj_name = obj.get('english', '')
+        obj_id = obj.get('symbol', '')
+
+    obj_name = obj_name.replace(' ', '_')
+    obj_name = re.sub('[^a-zA-Z0-9_]', '-', obj_name)
+
+    return f'{obj_type}/{obj_name}_{obj_id}'
