@@ -1,5 +1,5 @@
 from scry_api import get_api_url_from_query, get_api_data_from_url
-from scry_cache import load_cache_url, load_cache_card, write_cache_url, write_cache_card
+from scry_cache import load_url_from_cache, load_json_from_cache, write_url_to_cache, write_json_to_cache
 
 
 # get a list of cards from a query string
@@ -16,20 +16,20 @@ def get_cards_from_url(url):
         json_data = get_api_data_from_url(url)
         card_list = get_cards_from_json_data(json_data)
         save_to_cache(url, card_list)
-    return card_list            
+    return card_list
 
 
 # TODO: this makes some assumptions about the shape of the data
 # TODO: make this less clunky
 # call an api url found nested in the card data
 def get_uri_attribute_from_url(url):
-    json_data = load_cache_url(url)
+    json_data = load_url_from_cache(url)
     if json_data == None:
         json_data = get_api_data_from_url(url)
-        write_cache_url(url, [json_data])
-        write_cache_card(json_data)
+        write_url_to_cache(url, [json_data])
+        write_json_to_cache(json_data)
     else:
-        json_data = load_cache_card(json_data[0])
+        json_data = load_json_from_cache(json_data[0])
     return json_data
 
 
@@ -37,7 +37,7 @@ def get_uri_attribute_from_url(url):
 def get_card_from_id(id):
     url = 'https://api.scryfall.com/cards/' + id
     card = get_api_data_from_url(url)
-    write_cache_card(card)
+    write_json_to_cache(card)
     return card
 
 
@@ -54,21 +54,21 @@ def get_cards_from_json_data(data):
 def save_to_cache(url, cards):
     # cache each card individully
     for card in cards:
-        write_cache_card(card)
+        write_json_to_cache(card)
     # cache the list of card ids tied to the url
-    write_cache_url(url, cards)
+    write_url_to_cache(url, cards)
 
 
 # load cards from local cache
 def load_cards_from_cache(url):
-    cached_card_ids = load_cache_url(url)
+    cached_card_ids = load_url_from_cache(url)
     if cached_card_ids == None:
         return None
     # the query url is tied to a list of card ids
     # each card id is tied to cached json data for the card itself
     cards = []
     for id in cached_card_ids:
-        card = load_cache_card(id)
+        card = load_json_from_cache(id)
         # if a card isn't cached for some reason, query for it
         if card == None:
             card = get_card_from_id(id.split['_'][-1])
