@@ -15,7 +15,8 @@ def get_api_data_from_url(url):
     global first_query
     if not first_query:
         time.sleep(0.1)
-    
+    else:
+        first_query = False
+
     data = json.load(urllib.request.urlopen(url))
-    first_query = False
     return data
