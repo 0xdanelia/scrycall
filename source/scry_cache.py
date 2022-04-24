@@ -1,40 +1,49 @@
 import os, json, hashlib, re
 
-CACHE_DIR_URL = os.path.expanduser('~') + '/.cache/scrycall/api/'
-CACHE_DIR_CARD = os.path.expanduser('~') + '/.cache/scrycall/card/'
+CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'
+CACHE_DIR_URL = CACHE_DIR + 'url/'
 
 
-def write_cache_url(url, cards):
+def write_url_to_cache(url, data):
     path = CACHE_DIR_URL + get_url_cache_name(url)
     ids = []
-    for card in cards:
-        ids.append(get_card_cache_name(card))
-    write_cache_to_path(path, ids)
+    for obj in data:
+        ids.append(get_cache_path_from_object(obj))
+    write_to_cache(path, ids)
 
 
-def write_cache_card(card):
-    path = CACHE_DIR_CARD + get_card_cache_name(card)
-    write_cache_to_path(path, card)
+def write_json_to_cache(data):
+    path = CACHE_DIR + get_cache_path_from_object(data)
+    write_to_cache(path, data)
 
 
-def load_cache_url(url):
-    path = CACHE_DIR_URL + get_url_cache_name(url)
-    return load_cache_from_path(path)
+def get_cache_path_from_object(obj):
+    obj_type = obj.get('object', 'misc')
+    obj_name = obj.get('name', '').replace(' ', '_')
+    obj_name = re.sub('[^a-zA-Z0-9_]', '-', obj_name)
+    obj_id = obj.get('id')
+    return f'{obj_type}/{obj_name}_{obj_id}'
 
 
-def load_cache_card(id):
-    path = CACHE_DIR_CARD + id
-    return load_cache_from_path(path)
-
-
-def write_cache_to_path(path, data):
-    check_cache_dirs()
+def write_to_cache(path, data):
+    dir_path = os.path.split(path)[0]
+    if not os.path.isdir(dir_path):
+        os.makedirs(dir_path)
     with open(path, 'w') as cachefile:
         json.dump(data, cachefile, indent=4)
 
 
-def load_cache_from_path(path):
-    check_cache_dirs()
+def load_url_from_cache(url):
+    path = CACHE_DIR_URL + get_url_cache_name(url)
+    return load_from_cache(path)
+
+
+def load_json_from_cache(id):
+    path = CACHE_DIR + id
+    return load_from_cache(path)
+
+
+def load_from_cache(path):
     try:
         with open(path, 'r') as cachefile:
             return json.load(cachefile)
@@ -42,19 +51,5 @@ def load_cache_from_path(path):
         return None
 
 
-def check_cache_dirs():
-    if not os.path.isdir(CACHE_DIR_URL):
-        os.makedirs(CACHE_DIR_URL)
-    if not os.path.isdir(CACHE_DIR_CARD):
-        os.makedirs(CACHE_DIR_CARD)
-
-
 def get_url_cache_name(url):
     return hashlib.md5(url.encode()).hexdigest()
-
-
-def get_card_cache_name(card):
-    name = card['name'].replace(' ', '_')
-    name = re.sub('[^a-zA-Z0-9_]', '-', name)
-    return name + '_' + card['id']
-    
