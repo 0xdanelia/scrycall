@@ -17,7 +17,7 @@ ATTR_CODES = {
 
 # TODO: refactor/add...
 # printing columns with '%|'
-# printing iterative values with '*' and '?'
+# printing iterative values with '?'
 # handling oracle text (or other values) that contain a line break
 # traversing urls with '/'
 def print_data(data_list, format_string):
@@ -120,9 +120,16 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
     # for each possible value that '*' produces for a given attribute,
     # create a new print_line, replacing the '*' with each possible individual value.
 
-    star_idx = attribute_name.find('.*')
-    sub_attr_name = attribute_name[:star_idx]
-    sub_attr_value = get_attribute_value(sub_attr_name, data)
+    if attribute_name.startswith('*'):
+        star_idx = -1
+        sub_attr_name = ''
+        sub_attr_value = data
+        attr_to_replace = '*'
+    else:
+        star_idx = attribute_name.find('.*')
+        sub_attr_name = attribute_name[:star_idx]
+        sub_attr_value = get_attribute_value(sub_attr_name, data)
+        attr_to_replace = sub_attr_name + '.*'
 
     iterated_lines = []
 
@@ -134,13 +141,13 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
         values_to_iterate = range(len(str(sub_attr_value)))
 
     for sub_attr_value in values_to_iterate:
-        new_sub_attr_name = sub_attr_name + '.' + str(sub_attr_value)
+        new_sub_attr_name = attr_to_replace.replace('*', str(sub_attr_value))
         # if the print_line contains duplicate sub-attributes, all will be replaced here
-        new_print_line = print_line.replace('%{' + sub_attr_name + '.*', '%{' + new_sub_attr_name)
+        new_print_line = print_line.replace('%{' + attr_to_replace, '%{' + new_sub_attr_name)
 
-        if '*' in attribute_name[star_idx + 3:]:
+        if '*' in attribute_name[star_idx + 2:]:
             # multiple stars in a single attribute are handled recursively
-            new_attribute_name = attribute_name.replace(sub_attr_name + '.*', new_sub_attr_name)
+            new_attribute_name = attribute_name.replace(attr_to_replace, new_sub_attr_name, 1)
             iterated_lines += iterate_attributes_in_print_line(new_print_line, new_attribute_name, data)
         else:
             iterated_lines.append(new_print_line)
