@@ -17,7 +17,6 @@ ATTR_CODES = {
 
 # TODO: refactor/add...
 # printing columns with '%|'
-# printing iterative values with '?'
 # handling oracle text (or other values) that contain a line break
 # traversing urls with '/'
 def print_data(data_list, format_string):
@@ -40,7 +39,7 @@ def get_print_lines_from_data(data, format_string):
 
     print_lines = substitute_attributes_for_values(print_line, data)
     if not print_lines:
-        return None
+        return []
 
     # substitute the percent placeholder last
     for i in range(len(print_lines)):
@@ -99,20 +98,37 @@ def get_attribute_value(attribute_name, data):
     nested_attributes = attribute_name.split('.')
     attr_value = data
     for attr in nested_attributes:
-        attr_value = get_value_from_json_object(attr, attr_value)
+        if attr == '?':
+            # return a list of the currently valid attribute names
+            attr_value = get_list_of_available_attribute_names(attr_value)
+        else:
+            attr_value = get_value_from_json_object(attr, attr_value)
         if attr_value is None:
             return None
     return attr_value
+
+
+def get_list_of_available_attribute_names(data):
+    if isinstance(data, dict):
+        return list(data.keys())
+    elif isinstance(data, list):
+        return range(len(data))
+    else:
+        return range(len(str(data)))
 
 
 def get_value_from_json_object(attr, data):
     if isinstance(data, dict):
         return data.get(attr)
     elif attr.isdigit():
-        # if the given data is not a dictionary, treat the data as a list and the attribute as the index
+        # if the given data is not a dictionary: treat the data as iterable, and treat the attribute as the index
+        if isinstance(data, list):
+            iterable_data = data
+        else:
+            iterable_data = str(data)
         idx = int(attr)
-        if 0 <= idx < len(data):
-            return data[idx]
+        if 0 <= idx < len(iterable_data):
+            return iterable_data[idx]
     return None
 
 
@@ -122,7 +138,6 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
 
     if attribute_name.startswith('*'):
         star_idx = -1
-        sub_attr_name = ''
         sub_attr_value = data
         attr_to_replace = '*'
     else:
@@ -132,16 +147,10 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
         attr_to_replace = sub_attr_name + '.*'
 
     iterated_lines = []
+    values_to_iterate = get_list_of_available_attribute_names(sub_attr_value)
 
-    if isinstance(sub_attr_value, dict):
-        values_to_iterate = sub_attr_value.keys()
-    elif isinstance(sub_attr_value, list):
-        values_to_iterate = range(len(sub_attr_value))
-    else:
-        values_to_iterate = range(len(str(sub_attr_value)))
-
-    for sub_attr_value in values_to_iterate:
-        new_sub_attr_name = attr_to_replace.replace('*', str(sub_attr_value))
+    for iterated_value in values_to_iterate:
+        new_sub_attr_name = attr_to_replace.replace('*', str(iterated_value))
         # if the print_line contains duplicate sub-attributes, all will be replaced here
         new_print_line = print_line.replace('%{' + attr_to_replace, '%{' + new_sub_attr_name)
 
