@@ -1,7 +1,7 @@
 import time
-from scry_data import get_json_data_from_url
 
-# shortcuts for printing card attrobutes in the format string
+
+# shortcuts for printing card attributes in the format string
 ATTR_CODES = {
     '%n': '%{name}',
     '%m': '%{mana_cost}',
@@ -15,192 +15,141 @@ ATTR_CODES = {
 }
 
 
-def print_cards(cards, formatting):
-    # get lines of text to be printed
-    lines = []
-    for card in cards:
-        card_lines = generate_print_lines(card, formatting)
-        if card_lines == None:
-            continue
-        for card_line in card_lines:
+# TODO: refactor/add...
+# printing columns with '%|'
+# printing iterative values with '?'
+# handling oracle text (or other values) that contain a line break
+# traversing urls with '/'
+def print_data(data_list, format_string):
+    print_lines = []
+    for data in data_list:
+        print_lines += get_print_lines_from_data(data, format_string)
 
-            # separate newline characters
-            newline_cols = []
-            most_newlines = 0
-            for col in card_line:
-                split_col = col.split('\n')
-                most_newlines = max(most_newlines, len(split_col))
-                newline_cols.append(split_col)
-
-            # fill the shortest column with whitespace so they are all the same size
-            for newline_col in newline_cols:
-                while len(newline_col) < most_newlines:
-                    newline_col.append('')
-
-            # separate each line to be printed one at a time
-            for i in range(len(newline_cols[0])):
-                line = []
-                for newline_col in newline_cols:
-                    line.append(newline_col[i])
-                lines.append(line)
-
-    if len(lines) < 1:
-        return
-
-    # calculate column widths
-    num_cols = len(lines[0])
-    col_widths = [0] * num_cols
-    for row in lines:
-        for w in range(num_cols):
-            col_widths[w] = max(len(row[w]), col_widths[w])
-
-    # print the data
-    for column_list in lines:
-        print_line = ''
-        for i in range(num_cols):
-            print_line = print_line + '{: <' + str(col_widths[i]) + '}'
-        print_line = print_line.format(*column_list)
-        print(print_line.replace('\n', ' ').rstrip(' '))
+    for line in print_lines:
+        if line:
+            print(line)
 
 
-# each card is printed on one line, defined by the formatting string
-def generate_print_lines(card, formatting):
-    print_line = formatting
-    # first put in a placeholder for %%
-    percent_placeholder = '{PERCENT' + str(time.time()) + '}'
+def get_print_lines_from_data(data, format_string):
+    print_line = format_string
+    # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
+    percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
     while percent_placeholder in print_line:
-        percent_placeholder = '{PERCENT' + str(time.time()) + '}'
+        percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
     print_line = print_line.replace('%%', percent_placeholder)
-    # with literal % characters removed from the formatting string,
-    # it is easier to process formatted % characters
 
-    # replace %x shortcuts with full %{attr} name
+    print_lines = substitute_attributes_for_values(print_line, data)
+    if not print_lines:
+        return None
+
+    # substitute the percent placeholder last
+    for i in range(len(print_lines)):
+        print_lines[i] = print_lines[i].replace(percent_placeholder, '%')
+    return print_lines
+
+
+def substitute_attributes_for_values(print_line, data):
+    # substitute the attribute shortcuts '%x' with their long form '%{attribute}' strings
     for attr_code in ATTR_CODES:
         print_line = print_line.replace(attr_code, ATTR_CODES[attr_code])
 
-    # get %{attr} values
+    print_lines = []
+
     while True:
-        attr_name = get_next_attr_name(print_line)
-        if attr_name == None:
+        # replace any '%{attribute}' strings with the correct value from the input data
+        attribute_name = get_next_attribute_name(print_line)
+        if attribute_name is None:
+            # get_next_attribute_name() returns None when there are no more attributes to substitute
             break
-        # nested attributes can be chained together with '.'
-        attr_list = attr_name.split('.')
-        # all nested attributes can be referenced using '*'
-        # this probably means each card gets multiple printed lines
-        if '*' in attr_list:
-            iterated_list = iterate_attr(card, attr_list, print_line)
-            if iterated_list == None:
-                return None
-            for i in range(len(iterated_list)):
-                iterated_list[i] = [w.replace(percent_placeholder, '%') for w in iterated_list[i]]
-            return iterated_list
 
-        attr_value = parse_attr(card, attr_list)
-        if attr_value == None:
-            return None
-        print_line = print_line.replace('%{' + attr_name + '}', attr_value)
+        if '*' in attribute_name:
+            # '*' in an attribute can generate multiple lines
+            iterated_print_lines = iterate_attributes_in_print_line(print_line, attribute_name, data)
+            for line in iterated_print_lines:
+                print_lines += substitute_attributes_for_values(line, data)
+            return print_lines
 
-    print_line = print_line.split('%|')
-    print_line = [w.replace(percent_placeholder, '%') for w in print_line]
-    return [print_line]
+        else:
+            attribute_value = get_attribute_value(attribute_name, data)
+            # if any attribute value is None, do not print anything on this line
+            if attribute_value is None:
+                return []
+            print_line = print_line.replace('%{' + attribute_name + '}', str(attribute_value))
+
+    # even if only one line is printed, return it in a list so that it can be iterated in earlier functions
+    print_lines.append(print_line)
+
+    return print_lines
 
 
-# card attributes are referenced in the formatting string by %{attr}
-def get_next_attr_name(line):
+def get_next_attribute_name(line):
+    # attributes are formatted like '%{attribute_name}'
     start_idx = line.find('%{')
     if start_idx == -1 or start_idx == len(line) - 2:
         return None
     end_idx = line.find('}', start_idx)
     if end_idx == -1:
         return None
-    attr = line[start_idx + 2 : end_idx]
+    attr = line[start_idx + 2: end_idx]
     return attr
 
 
-# get an attribute of the card defined in json
-# nested values are separated by a dot '.'
-def parse_attr(card, attr_list):
-    value = card
-    prev_attr = ''
-    for attr in attr_list:
-        # this prints the name of the previous attribute, rather than a value
-        if attr == '^':
-            value = prev_attr
-        # this prints a list of the available attribute names
-        elif attr == '?':
-            value = get_available_attr_names(value)
-        # this queries the api if the previous value is a url
-        elif attr == '/':
-            value = get_json_data_from_url(value)
-        else:
-            value = get_attr_value(value, attr)
-        if value == None:
+def get_attribute_value(attribute_name, data):
+    # nested attributes can be chained together like '%{top.middle.bottom}'
+    nested_attributes = attribute_name.split('.')
+    attr_value = data
+    for attr in nested_attributes:
+        attr_value = get_value_from_json_object(attr, attr_value)
+        if attr_value is None:
             return None
-
-        prev_attr = attr
-    return str(value)
+    return attr_value
 
 
-# TODO: consolidate this function and parse_attr() since they share a lot of code
-# generate a print line for each item in the attribute marked with '*'
-def iterate_attr(card, attr_list, print_line):
-    value = card
-    prev_attr = ''
-    attr_replace = '%{'
-    for attr in attr_list:
-        if attr == '*':
-            break
-        # construct a string of the nested attributes up until the '*'
-        attr_replace += attr + '.'
-        # this prints the name of the previous attribute, rather than a value
-        if attr == '^':
-            value = prev_attr
-        # this prints a list of the available attribute names
-        elif attr == '?':
-            value = get_available_attr_names(value)
-        # this queries the api if the previous value is a url
-        elif attr == '/':
-            value = get_uri_attribute_from_url(value)
-        else:
-            value = get_attr_value(value, attr)
-        if value == None:
-            return None
-        prev_attr = attr
-
-    results = []
-    # iterate differently based on dicts, lists, strings, etc
-    if type(value) is dict:
-        items = value.keys()
-    else:
-        items = range(len(value))
-
-    for item in items:
-        # create a new print line for each element in the itterated attribute
-        # each element's name replaces the '*' on that line
-        item_line = print_line.replace(attr_replace + '*', attr_replace + str(item))
-        # after the replace, run each new line through the process again
-        next_result = generate_print_lines(card, item_line)
-        if next_result == None:
-            continue
-        results = results + next_result
-    return results
-
-
-# get the value of an attribute from json data
-def get_attr_value(data, attr):
-    if type(data) is dict:
+def get_value_from_json_object(attr, data):
+    if isinstance(data, dict):
         return data.get(attr)
-    if attr.isdigit():
-        return data[int(attr)]
+    elif attr.isdigit():
+        # if the given data is not a dictionary, treat the data as a list and the attribute as the index
+        idx = int(attr)
+        if 0 <= idx < len(data):
+            return data[idx]
     return None
 
 
-# get all names that could be used to iterate an attribute
-# if the attribute is a dictionary, return the keys
-# if it is a list or string, return the list of valid indexes
-def get_available_attr_names(data):
-    if type(data) is dict:
-        return list(data)
-    if type(data) is list or type(data) is str:
-        return list(range(len(data)))
-    return None
+def iterate_attributes_in_print_line(print_line, attribute_name, data):
+    # for each possible value that '*' produces for a given attribute,
+    # create a new print_line, replacing the '*' with each possible individual value.
+
+    if attribute_name.startswith('*'):
+        star_idx = -1
+        sub_attr_name = ''
+        sub_attr_value = data
+        attr_to_replace = '*'
+    else:
+        star_idx = attribute_name.find('.*')
+        sub_attr_name = attribute_name[:star_idx]
+        sub_attr_value = get_attribute_value(sub_attr_name, data)
+        attr_to_replace = sub_attr_name + '.*'
+
+    iterated_lines = []
+
+    if isinstance(sub_attr_value, dict):
+        values_to_iterate = sub_attr_value.keys()
+    elif isinstance(sub_attr_value, list):
+        values_to_iterate = range(len(sub_attr_value))
+    else:
+        values_to_iterate = range(len(str(sub_attr_value)))
+
+    for sub_attr_value in values_to_iterate:
+        new_sub_attr_name = attr_to_replace.replace('*', str(sub_attr_value))
+        # if the print_line contains duplicate sub-attributes, all will be replaced here
+        new_print_line = print_line.replace('%{' + attr_to_replace, '%{' + new_sub_attr_name)
+
+        if '*' in attribute_name[star_idx + 2:]:
+            # multiple stars in a single attribute are handled recursively
+            new_attribute_name = attribute_name.replace(attr_to_replace, new_sub_attr_name, 1)
+            iterated_lines += iterate_attributes_in_print_line(new_print_line, new_attribute_name, data)
+        else:
+            iterated_lines.append(new_print_line)
+
+    return iterated_lines

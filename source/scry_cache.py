@@ -1,5 +1,6 @@
 import os, json, hashlib, re
 
+
 CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'
 CACHE_DIR_URL = CACHE_DIR + 'url/'
 
