@@ -40,7 +40,7 @@ def get_print_lines_from_data(data, format_string):
 
     print_lines = substitute_attributes_for_values(print_line, data)
     if not print_lines:
-        return None
+        return []
 
     # substitute the percent placeholder last
     for i in range(len(print_lines)):
@@ -126,7 +126,6 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
 
     if attribute_name.startswith('*'):
         star_idx = -1
-        sub_attr_name = ''
         sub_attr_value = data
         attr_to_replace = '*'
     else:
