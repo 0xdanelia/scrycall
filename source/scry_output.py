@@ -109,10 +109,14 @@ def get_value_from_json_object(attr, data):
     if isinstance(data, dict):
         return data.get(attr)
     elif attr.isdigit():
-        # if the given data is not a dictionary, treat the data as a list and the attribute as the index
+        # if the given data is not a dictionary: treat the data as iterable, and treat the attribute as the index
+        if isinstance(data, list):
+            iterable_data = data
+        else:
+            iterable_data = str(data)
         idx = int(attr)
-        if 0 <= idx < len(data):
-            return data[idx]
+        if 0 <= idx < len(iterable_data):
+            return iterable_data[idx]
     return None
 
 
