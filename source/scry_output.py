@@ -147,16 +147,10 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
         attr_to_replace = sub_attr_name + '.*'
 
     iterated_lines = []
+    values_to_iterate = get_list_of_available_attribute_names(sub_attr_value)
 
-    if isinstance(sub_attr_value, dict):
-        values_to_iterate = sub_attr_value.keys()
-    elif isinstance(sub_attr_value, list):
-        values_to_iterate = range(len(sub_attr_value))
-    else:
-        values_to_iterate = range(len(str(sub_attr_value)))
-
-    for sub_attr_value in values_to_iterate:
-        new_sub_attr_name = attr_to_replace.replace('*', str(sub_attr_value))
+    for iterated_value in values_to_iterate:
+        new_sub_attr_name = attr_to_replace.replace('*', str(iterated_value))
         # if the print_line contains duplicate sub-attributes, all will be replaced here
         new_print_line = print_line.replace('%{' + attr_to_replace, '%{' + new_sub_attr_name)
 
