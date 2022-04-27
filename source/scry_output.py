@@ -17,7 +17,6 @@ ATTR_CODES = {
 
 # TODO: refactor/add...
 # printing columns with '%|'
-# printing iterative values with '?'
 # handling oracle text (or other values) that contain a line break
 # traversing urls with '/'
 def print_data(data_list, format_string):
@@ -99,10 +98,23 @@ def get_attribute_value(attribute_name, data):
     nested_attributes = attribute_name.split('.')
     attr_value = data
     for attr in nested_attributes:
-        attr_value = get_value_from_json_object(attr, attr_value)
+        if attr == '?':
+            # return a list of the currently valid attribute names
+            attr_value = get_list_of_available_attribute_names(attr_value)
+        else:
+            attr_value = get_value_from_json_object(attr, attr_value)
         if attr_value is None:
             return None
     return attr_value
+
+
+def get_list_of_available_attribute_names(data):
+    if isinstance(data, dict):
+        return list(data.keys())
+    elif isinstance(data, list):
+        return range(len(data))
+    else:
+        return range(len(str(data)))
 
 
 def get_value_from_json_object(attr, data):
