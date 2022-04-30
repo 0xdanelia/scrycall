@@ -16,7 +16,6 @@ ATTR_CODES = {
 
 
 # TODO: refactor/add...
-# printing columns with '%|'
 # handling oracle text (or other values) that contain a line break
 # traversing urls with '/'
 def print_data(data_list, format_string):
@@ -24,9 +23,23 @@ def print_data(data_list, format_string):
     for data in data_list:
         print_lines += get_print_lines_from_data(data, format_string)
 
-    for line in print_lines:
-        if line:
-            print(line)
+    if not print_lines:
+        return
+
+    # at this point, print_lines is a 2D list of rows and columns
+    num_columns = len(print_lines[0])
+    column_widths = [0] * num_columns
+    # cycle through the data to find out how wide each column needs to be
+    for row in print_lines:
+        for i in range(num_columns):
+            column_widths[i] = max(column_widths[i], len(row[i]))
+
+    for row in print_lines:
+        padded_row = ''
+        for i in range(num_columns):
+            padded_column = row[i].ljust(column_widths[i])
+            padded_row += padded_column
+        print(padded_row)
 
 
 def get_print_lines_from_data(data, format_string):
@@ -37,14 +50,27 @@ def get_print_lines_from_data(data, format_string):
         percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
     print_line = print_line.replace('%%', percent_placeholder)
 
+    # rather than split the format_string into separate columns now, do it after the data is substituted
+    column_placeholder = '[COLUMN_' + str(time.time()) + ']'
+    while column_placeholder in print_line:
+        column_placeholder = '[COLUMN_' + str(time.time()) + ']'
+    print_line = print_line.replace('%|', column_placeholder)
+
     print_lines = substitute_attributes_for_values(print_line, data)
     if not print_lines:
         return []
 
-    # substitute the percent placeholder last
+    # substitute the percent placeholder in each print_line
     for i in range(len(print_lines)):
         print_lines[i] = print_lines[i].replace(percent_placeholder, '%')
-    return print_lines
+
+    # turn each print_line into a list, where each element is one column to be printed
+    column_lines = []
+    for line in print_lines:
+        line_columns = line.split(column_placeholder)
+        column_lines.append(line_columns)
+
+    return column_lines
 
 
 def substitute_attributes_for_values(print_line, data):
