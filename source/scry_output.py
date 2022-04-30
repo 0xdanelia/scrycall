@@ -19,9 +19,23 @@ ATTR_CODES = {
 # handling oracle text (or other values) that contain a line break
 # traversing urls with '/'
 def print_data(data_list, format_string):
+    # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
+    while True:
+        percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
+        if percent_placeholder not in format_string:
+            break
+    format_string = format_string.replace('%%', percent_placeholder)
+
+    # rather than split the format_string into separate columns now, do it after the data is substituted
+    while True:
+        column_placeholder = '[COLUMN_' + str(time.time()) + ']'
+        if column_placeholder not in format_string:
+            break
+    format_string = format_string.replace('%|', column_placeholder)
+
     print_lines = []
     for data in data_list:
-        print_lines += get_print_lines_from_data(data, format_string)
+        print_lines += get_print_lines_from_data(data, format_string, percent_placeholder, column_placeholder)
 
     if not print_lines:
         return
@@ -34,27 +48,17 @@ def print_data(data_list, format_string):
         for i in range(num_columns):
             column_widths[i] = max(column_widths[i], len(row[i]))
 
+    # pad each column with whitespace and concat them together to print a row
     for row in print_lines:
         padded_row = ''
         for i in range(num_columns):
             padded_column = row[i].ljust(column_widths[i])
             padded_row += padded_column
-        print(padded_row)
+        print(padded_row.rstrip())
 
 
-def get_print_lines_from_data(data, format_string):
+def get_print_lines_from_data(data, format_string, percent_placeholder, column_placeholder):
     print_line = format_string
-    # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
-    percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
-    while percent_placeholder in print_line:
-        percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
-    print_line = print_line.replace('%%', percent_placeholder)
-
-    # rather than split the format_string into separate columns now, do it after the data is substituted
-    column_placeholder = '[COLUMN_' + str(time.time()) + ']'
-    while column_placeholder in print_line:
-        column_placeholder = '[COLUMN_' + str(time.time()) + ']'
-    print_line = print_line.replace('%|', column_placeholder)
 
     print_lines = substitute_attributes_for_values(print_line, data)
     if not print_lines:
