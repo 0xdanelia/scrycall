@@ -23,7 +23,8 @@ def parse_json_data_into_list(data):
         data_list = data.get('data')
         if data.get('has_more'):
             next_url = data.get('next_page')
-            data_list += get_json_data_from_url(next_url)
+            next_data = get_api_data_from_url(next_url)
+            data_list += parse_json_data_into_list(next_data)
         return data_list
     else:
         return [data]
