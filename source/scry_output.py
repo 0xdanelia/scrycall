@@ -16,35 +16,65 @@ ATTR_CODES = {
 
 
 # TODO: refactor/add...
-# printing columns with '%|'
 # handling oracle text (or other values) that contain a line break
 # traversing urls with '/'
 def print_data(data_list, format_string):
+    # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
+    while True:
+        percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
+        if percent_placeholder not in format_string:
+            break
+    format_string = format_string.replace('%%', percent_placeholder)
+
+    # rather than split the format_string into separate columns now, do it after the data is substituted
+    while True:
+        column_placeholder = '[COLUMN_' + str(time.time()) + ']'
+        if column_placeholder not in format_string:
+            break
+    format_string = format_string.replace('%|', column_placeholder)
+
     print_lines = []
     for data in data_list:
-        print_lines += get_print_lines_from_data(data, format_string)
+        print_lines += get_print_lines_from_data(data, format_string, percent_placeholder, column_placeholder)
 
-    for line in print_lines:
-        if line:
-            print(line)
+    if not print_lines:
+        return
+
+    # at this point, print_lines is a 2D list of rows and columns
+    num_columns = len(print_lines[0])
+    column_widths = [0] * num_columns
+    # cycle through the data to find out how wide each column needs to be
+    for row in print_lines:
+        for i in range(num_columns):
+            column_widths[i] = max(column_widths[i], len(row[i]))
+
+    # pad each column with whitespace and concat them together to print a row
+    for row in print_lines:
+        padded_row = ''
+        for i in range(num_columns):
+            padded_column = row[i].ljust(column_widths[i])
+            padded_row += padded_column
+        print(padded_row.rstrip())
 
 
-def get_print_lines_from_data(data, format_string):
+def get_print_lines_from_data(data, format_string, percent_placeholder, column_placeholder):
     print_line = format_string
-    # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
-    percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
-    while percent_placeholder in print_line:
-        percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
-    print_line = print_line.replace('%%', percent_placeholder)
 
     print_lines = substitute_attributes_for_values(print_line, data)
     if not print_lines:
         return []
 
-    # substitute the percent placeholder last
+    # substitute the percent placeholder in each print_line
     for i in range(len(print_lines)):
         print_lines[i] = print_lines[i].replace(percent_placeholder, '%')
-    return print_lines
+
+    # turn each print_line into a list, where each element is one column to be printed
+    column_lines = []
+    for line in print_lines:
+        line_columns = line.split(column_placeholder)
+        column_lines.append(line_columns)
+
+    return column_lines
 
 
 def substitute_attributes_for_values(print_line, data):
@@ -97,14 +127,19 @@ def get_attribute_value(attribute_name, data):
     # nested attributes can be chained together like '%{top.middle.bottom}'
     nested_attributes = attribute_name.split('.')
     attr_value = data
+    prev_attr_name = None
     for attr in nested_attributes:
         if attr == '?':
             # return a list of the currently valid attribute names
             attr_value = get_list_of_available_attribute_names(attr_value)
+        elif attr == '^':
+            # return the name of the previous attribute
+            attr_value = prev_attr_name
         else:
             attr_value = get_value_from_json_object(attr, attr_value)
         if attr_value is None:
             return None
+        prev_attr_name = attr
     return attr_value
 
 
