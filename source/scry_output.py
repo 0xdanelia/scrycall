@@ -97,14 +97,19 @@ def get_attribute_value(attribute_name, data):
     # nested attributes can be chained together like '%{top.middle.bottom}'
     nested_attributes = attribute_name.split('.')
     attr_value = data
+    prev_attr_name = None
     for attr in nested_attributes:
         if attr == '?':
             # return a list of the currently valid attribute names
             attr_value = get_list_of_available_attribute_names(attr_value)
+        elif attr == '^':
+            # return the name of the previous attribute
+            attr_value = prev_attr_name
         else:
             attr_value = get_value_from_json_object(attr, attr_value)
         if attr_value is None:
             return None
+        prev_attr_name = attr
     return attr_value
 
 
