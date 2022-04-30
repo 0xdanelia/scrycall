@@ -12,7 +12,8 @@ def write_url_to_cache(url, data_list):
         # save each data object in its own file, then save a list of those filenames
         write_json_to_cache(data)
         cached_data_files.append(get_cache_path_from_object(data))
-    _write_to_cache(path, cached_data_files)
+    url_data_to_cache = {'url': url, 'files': cached_data_files}
+    _write_to_cache(path, url_data_to_cache)
 
 
 def write_json_to_cache(data):
@@ -31,7 +32,10 @@ def _write_to_cache(path, data):
 def load_url_from_cache(url):
     path = CACHE_DIR_URL + get_url_cache_name(url)
     # url caches contain a list of filenames, where each file contains cached JSON data
-    cache_filenames = _load_from_cache(path)
+    cached_data = _load_from_cache(path)
+    if not cached_data:
+        return None
+    cache_filenames = cached_data.get('files')
     if not cache_filenames:
         return None
     data = []
@@ -71,13 +75,10 @@ def get_cache_path_from_object(obj):
         obj_id = obj.get('id', '')
 
     elif obj_type == 'ruling':
-        obj_name = obj.get('comment', '')
+        obj_name = hashlib.md5(obj.get('comment', '').encode()).hexdigest()
         obj_id = obj.get('oracle_id', '')
 
-    elif obj_type == 'card_symbol':
-        obj_name = obj.get('english', '')
-        obj_id = obj.get('symbol', '')
-
+    # to avoid potential issues with filenames, only use letters, numbers, '_', and '-'
     obj_name = obj_name.replace(' ', '_')
     obj_name = re.sub('[^a-zA-Z0-9_]', '-', obj_name)
 

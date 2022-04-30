@@ -3,6 +3,7 @@ import urllib.request, urllib.parse, json, time
 
 first_query = True
 
+
 # get the web address for calling the scryfall api
 def get_api_url_from_query(query):
     api_url = 'https://api.scryfall.com/cards/search?q='

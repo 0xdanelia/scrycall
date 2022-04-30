@@ -1,5 +1,7 @@
 import time
 
+from scry_data import get_json_data_from_url
+
 
 # shortcuts for printing card attributes in the format string
 ATTR_CODES = {
@@ -135,6 +137,12 @@ def get_attribute_value(attribute_name, data):
         elif attr == '^':
             # return the name of the previous attribute
             attr_value = prev_attr_name
+        elif attr == '/':
+            # if the previous value is a scryfall api endpoint, return its data
+            if isinstance(attr_value, str) and attr_value.startswith('https://api.scryfall.com/'):
+                attr_value = get_json_data_from_url(attr_value)
+            else:
+                return None
         else:
             attr_value = get_value_from_json_object(attr, attr_value)
         if attr_value is None:
