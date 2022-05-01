@@ -17,9 +17,6 @@ ATTR_CODES = {
 }
 
 
-# TODO: refactor/add...
-# handling oracle text (or other values) that contain a line break
-# traversing urls with '/'
 def print_data(data_list, format_string):
     # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
     while True:
@@ -74,7 +71,11 @@ def get_print_lines_from_data(data, format_string, percent_placeholder, column_p
     column_lines = []
     for line in print_lines:
         line_columns = line.split(column_placeholder)
-        column_lines.append(line_columns)
+        # line_columns is currently one row divided into columns
+        # we want each newline within those columns to become its own row
+        newline_rows_by_columns = preserve_newlines_in_columns(line_columns)
+        for newline_row in newline_rows_by_columns:
+            column_lines.append(newline_row)
 
     return column_lines
 
@@ -205,3 +206,34 @@ def iterate_attributes_in_print_line(print_line, attribute_name, data):
             iterated_lines.append(new_print_line)
 
     return iterated_lines
+
+
+def preserve_newlines_in_columns(cols):
+    # given a list where each element is a single column,
+    # return a 2D list where each column is preserved, but each newline gets its own row
+    num_cols = len(cols)
+    output_cols = []
+    for i in range(num_cols):
+        output_cols.append([])
+    max_rows = 0
+
+    for i in range(num_cols):
+        split_column = cols[i].split('\n')
+        max_rows = max(max_rows, len(split_column))
+        for col_row in split_column:
+            output_cols[i].append(col_row)
+
+    # insert empty strings into the shorter columns so that the output is consistent
+    for i in range(num_cols):
+        while len(output_cols[i]) < max_rows:
+            output_cols[i].append('')
+
+    output_rows = []
+    # earlier functions expect each element of the output to be a row, rather than a column
+    for i in range(max_rows):
+        row = []
+        for col in output_cols:
+            row.append(col[i])
+        output_rows.append(row)
+
+    return output_rows
