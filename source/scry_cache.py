@@ -1,4 +1,7 @@
-import os, json, hashlib, re
+import hashlib
+import json
+import os
+import re
 
 
 CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'

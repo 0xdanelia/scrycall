@@ -20,7 +20,6 @@ def parse_args(args):
     return query, formatting
 
 
-# parse flags from the command line and get their value
 def parse_flag(arg, formatting):
     if arg.startswith('--print='):
         # format the plain-text output

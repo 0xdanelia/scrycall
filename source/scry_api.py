@@ -1,23 +1,25 @@
-import urllib.request, urllib.parse, json, time
+import json
+import time
+import urllib.request
+import urllib.parse
 
 
-first_query = True
+GLOBAL_is_first_query = True
 
 
-# get the web address for calling the scryfall api
 def get_api_url_from_query(query):
+    # transform the query string into a url-friendly format, and attach it to the scryfall api url
     api_url = 'https://api.scryfall.com/cards/search?q='
     return api_url + urllib.parse.quote_plus(query)
 
 
-# call the api and return the data
 def get_api_data_from_url(url):
-    # wait 100 milliseconds between calls:  https://scryfall.com/docs/api
-    global first_query
-    if not first_query:
+    global GLOBAL_is_first_query
+    if not GLOBAL_is_first_query:
+        # wait 100 milliseconds between calls to avoid spamming the api:  https://scryfall.com/docs/api
         time.sleep(0.1)
     else:
-        first_query = False
+        GLOBAL_is_first_query = False
 
     data = json.load(urllib.request.urlopen(url))
     return data
