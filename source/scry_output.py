@@ -17,30 +17,47 @@ ATTR_CODES = {
 }
 
 
-def print_data(data_list, format_string):
+def print_data(data_list, format_list):
+    flattened_format_list = ' '.join(format_list)
     # to handle multiple percent characters next to one another, replace '%%' with a unique placeholder first
     while True:
         percent_placeholder = '[PERCENT_' + str(time.time()) + ']'
-        if percent_placeholder not in format_string:
+        if percent_placeholder not in flattened_format_list:
             break
-    format_string = format_string.replace('%%', percent_placeholder)
 
     # rather than split the format_string into separate columns now, do it after the data is substituted
     while True:
         column_placeholder = '[COLUMN_' + str(time.time()) + ']'
-        if column_placeholder not in format_string:
+        if column_placeholder not in flattened_format_list:
             break
-    format_string = format_string.replace('%|', column_placeholder)
+
+    num_columns = None
+    for i in range(len(format_list)):
+        format_list[i] = format_list[i].replace('%%', percent_placeholder)
+        format_list[i] = format_list[i].replace('%|', column_placeholder)
+        # perform a check to make sure each format string contains the same number of columns
+        if num_columns is None:
+            num_columns = format_list[i].count(column_placeholder) + 1
+        else:
+            if num_columns != format_list[i].count(column_placeholder) + 1:
+                raise 'Each "print=" and "else=" string must contain the same number of "%|" column separators'
 
     print_lines = []
     for data in data_list:
-        print_lines += get_print_lines_from_data(data, format_string, percent_placeholder, column_placeholder)
+        # populate the format string with attributes from the data
+        # whenever a format string cannot be fully populated, try the next 'else' string
+        formats_to_attempt = format_list
+        while formats_to_attempt:
+            results = get_print_lines_from_data(data, formats_to_attempt[0], percent_placeholder, column_placeholder)
+            if results:
+                break
+            formats_to_attempt = formats_to_attempt[1:]
+        print_lines += results
 
     if not print_lines:
         return
 
     # at this point, print_lines is a 2D list of rows and columns
-    num_columns = len(print_lines[0])
     column_widths = [0] * num_columns
     # cycle through the data to find out how wide each column needs to be
     for row in print_lines:

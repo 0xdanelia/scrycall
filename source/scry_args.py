@@ -1,40 +1,43 @@
-# parse command line input
 def parse_args(args):
     query = None
-    flags = {}
-    formatting = None
-    
+    formatting = []
+
     for arg in args:
         # arg is a flag
         if arg.startswith('--'):
-            flag, value = parse_flag(arg)
-            flags[flag] = value
+            parse_flag(arg, formatting)
         # arg is part of the query
         else:
-            if query == None:
-                query = parse_query(arg)
+            if query is None:
+                query = parse_string(arg)
             else:
-                query = query + ' ' + parse_query(arg)
-    
+                query = query + ' ' + parse_string(arg)
+
     # default formatting
-    formatting = flags.get('format')
-    if formatting == None:
-        formatting = '%{name} %| %{type_line} %| %{mana_cost}'
-    
-    return query, flags, formatting
+    if not formatting:
+        formatting.append('%{name} %| %{type_line} %| %{mana_cost}')
+
+    return query, formatting
 
 
 # parse flags from the command line and get their value
-def parse_flag(arg):
-    if arg.startswith('--format='):
-        flag = 'format'
-        value = arg[9:]
+def parse_flag(arg, formatting):
+    if arg.startswith('--print='):
+        # format the plain-text output
+        value = arg[8:]
+        if formatting:
+            raise '"print=" flag already set'
+        formatting.append(value)
+    elif arg.startswith('--else='):
+        # if a formatted field has no value, instead use this as the print format
+        value = arg[7:]
+        if not formatting:
+            raise 'Must have a "print=" flag before using "else="'
+        formatting.append(value)
 
-    return flag, value
 
-
-# parse query text from the command line
-def parse_query(arg):
+def parse_string(arg):
     # backticks are replaced with single quotes
     # otherwise the text is used as-is
-    return arg.replace("`", "'")
+    result = arg.replace("`", "'")
+    return result
