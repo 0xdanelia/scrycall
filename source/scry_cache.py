@@ -1,4 +1,7 @@
-import os, json, hashlib, re
+import hashlib
+import json
+import os
+import re
 
 
 CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'
@@ -33,10 +36,10 @@ def load_url_from_cache(url):
     path = CACHE_DIR_URL + get_url_cache_name(url)
     # url caches contain a list of filenames, where each file contains cached JSON data
     cached_data = _load_from_cache(path)
-    if not cached_data:
+    if cached_data is None:
         return None
     cache_filenames = cached_data.get('files')
-    if not cache_filenames:
+    if cache_filenames is None:
         return None
     data = []
     for filename in cache_filenames:

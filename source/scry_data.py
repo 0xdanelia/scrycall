@@ -18,6 +18,8 @@ def get_json_data_from_url(url):
 
 
 def parse_json_data_into_list(data):
+    if data is None:
+        return []
     data_type = data.get('object')
     if data_type == 'list' or data_type == 'catalog':
         data_list = data.get('data')
