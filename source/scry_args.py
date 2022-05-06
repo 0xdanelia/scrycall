@@ -4,10 +4,11 @@ def parse_args(args):
 
     for arg in args:
         # arg is a flag
+        flag_was_parsed = False
         if arg.startswith('--'):
-            parse_flag(arg, formatting)
+            flag_was_parsed = parse_flag(arg, formatting)
         # arg is part of the query
-        else:
+        if not flag_was_parsed:
             if query is None:
                 query = parse_string(arg)
             else:
@@ -27,12 +28,15 @@ def parse_flag(arg, formatting):
         if formatting:
             raise '"print=" flag already set'
         formatting.append(value)
+        return True
     elif arg.startswith('--else='):
         # if a formatted field has no value, instead use this as the print format
         value = arg[7:]
         if not formatting:
             raise 'Must have a "print=" flag before using "else="'
         formatting.append(value)
+        return True
+    return False
 
 
 def parse_string(arg):
