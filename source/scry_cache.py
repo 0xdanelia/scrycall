@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import re
+import time
 
 
 CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'
@@ -34,6 +35,17 @@ def _write_to_cache(path, data):
 
 def load_url_from_cache(url):
     path = CACHE_DIR_URL + get_url_cache_name(url)
+
+    if not os.path.isfile(path):
+        return None
+
+    # files older than 24 hours are considered stale and are not loaded
+    # 24 hours == 86400 seconds
+    last_modified_time = os.path.getmtime(path)
+    now = time.time()
+    if now > last_modified_time + 86400:
+        return None
+
     # url caches contain a list of filenames, where each file contains cached JSON data
     cached_data = _load_from_cache(path)
     if cached_data is None:
@@ -61,9 +73,18 @@ def _load_from_cache(path):
 
 
 def get_url_cache_name(url):
-    # each cached url gets a unique filename
-    # to avoid issues with long urls and/or special characters, a hash is used instead of the url string
-    return hashlib.md5(url.encode()).hexdigest()
+    # to avoid conflicts after special characters are removed, a hash of the original url is added
+    hashed_url = hashlib.md5(url.encode()).hexdigest()
+    trimmed_url = url.replace('https://api.scryfall.com/', '')
+    trimmed_url = remove_special_characters(trimmed_url)
+
+    # filenames are limited to 255 characters in many systems
+    # md5 hashes are 32 characters long
+    # limit the url portion of the filename to 220 characters, just to be safe
+    if len(trimmed_url) > 220:
+        trimmed_url = trimmed_url[:220]
+
+    return f'{trimmed_url}_{hashed_url}'
 
 
 def get_cache_path_from_object(obj):
@@ -81,8 +102,13 @@ def get_cache_path_from_object(obj):
         obj_name = hashlib.md5(obj.get('comment', '').encode()).hexdigest()
         obj_id = obj.get('oracle_id', '')
 
-    # to avoid potential issues with filenames, only use letters, numbers, '_', and '-'
-    obj_name = obj_name.replace(' ', '_')
-    obj_name = re.sub('[^a-zA-Z0-9_]', '-', obj_name)
+    obj_name = remove_special_characters(obj_name)
 
     return f'{obj_type}/{obj_name}_{obj_id}'
+
+
+def remove_special_characters(text):
+    # to avoid potential issues with filenames, only use letters, numbers, '_', and '-'
+    text = text.replace(' ', '_')
+    text = re.sub('[^a-zA-Z0-9_]', '-', text)
+    return text
