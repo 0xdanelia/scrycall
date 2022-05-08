@@ -12,8 +12,9 @@ def main():
     # formatting: list of format strings that determine how data is printed
     query, formatting = parse_args(sys.argv[1:])
 
-    cards = get_cards_from_query(query)
-    print_data(cards, formatting)
+    if query:
+        cards = get_cards_from_query(query)
+        print_data(cards, formatting)
 
     return 0
 
