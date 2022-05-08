@@ -1,10 +1,11 @@
 import json
 import time
-import urllib.request
+import urllib.error
 import urllib.parse
+import urllib.request
 
 
-GLOBAL_is_first_query = True
+IS_FIRST_QUERY = True
 
 
 def get_api_url_from_query(query):
@@ -14,12 +15,12 @@ def get_api_url_from_query(query):
 
 
 def get_api_data_from_url(url):
-    global GLOBAL_is_first_query
-    if not GLOBAL_is_first_query:
+    global IS_FIRST_QUERY
+    if not IS_FIRST_QUERY:
         # wait 100 milliseconds between calls to avoid spamming the api:  https://scryfall.com/docs/api
         time.sleep(0.1)
     else:
-        GLOBAL_is_first_query = False
+        IS_FIRST_QUERY = False
 
     try:
         with urllib.request.urlopen(url) as response:

@@ -8,8 +8,19 @@ import time
 CACHE_DIR = os.path.expanduser('~') + '/.cache/scrycall/'
 CACHE_DIR_URL = CACHE_DIR + 'url/'
 
+CACHE_FLAGS = {
+    'cache-only': False,
+    'ignore-cache': False,
+    'do-not-cache': False,
+}
+# 24 hours == 86400 seconds
+CACHE_EXPIRATION = 86400
+
 
 def write_url_to_cache(url, data_list):
+    if CACHE_FLAGS['do-not-cache']:
+        return
+
     path = CACHE_DIR_URL + get_url_cache_name(url)
     cached_data_files = []
     for data in data_list:
@@ -34,16 +45,18 @@ def _write_to_cache(path, data):
 
 
 def load_url_from_cache(url):
+    if CACHE_FLAGS['ignore-cache']:
+        return None
+
     path = CACHE_DIR_URL + get_url_cache_name(url)
 
     if not os.path.isfile(path):
         return None
 
-    # files older than 24 hours are considered stale and are not loaded
-    # 24 hours == 86400 seconds
+    # files older than the expiration time hours are considered stale and are not loaded
     last_modified_time = os.path.getmtime(path)
     now = time.time()
-    if now > last_modified_time + 86400:
+    if now > last_modified_time + CACHE_EXPIRATION:
         return None
 
     # url caches contain a list of filenames, where each file contains cached JSON data
@@ -112,3 +125,22 @@ def remove_special_characters(text):
     text = text.replace(' ', '_')
     text = re.sub('[^a-zA-Z0-9_]', '-', text)
     return text
+
+
+def delete_cache():
+    _remove_expired_files_from_cache(0)
+
+
+def clean_cache():
+    _remove_expired_files_from_cache(CACHE_EXPIRATION)
+
+
+def _remove_expired_files_from_cache(expire_time):
+    # delete files from cache that are older than expire_time (in seconds)
+    now = time.time()
+    if os.path.isdir(CACHE_DIR):
+        for path, dirs, files in os.walk(CACHE_DIR):
+            for filename in files:
+                file_path = os.path.join(path, filename)
+                if now > os.path.getmtime(file_path) + expire_time:
+                    os.remove(file_path)

@@ -1,5 +1,6 @@
 from scry_api import get_api_url_from_query, get_api_data_from_url
 from scry_cache import load_url_from_cache, write_url_to_cache
+from scry_cache import CACHE_FLAGS
 
 
 def get_cards_from_query(query):
@@ -11,6 +12,8 @@ def get_cards_from_query(query):
 def get_json_data_from_url(url):
     json_data = load_url_from_cache(url)
     if json_data is None:
+        if CACHE_FLAGS['cache-only']:
+            return []
         json_data = get_api_data_from_url(url)
         json_data = parse_json_data_into_list(json_data)
         write_url_to_cache(url, json_data)

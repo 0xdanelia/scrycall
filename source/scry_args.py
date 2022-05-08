@@ -1,3 +1,10 @@
+import sys
+
+from scry_cache import clean_cache, delete_cache
+from scry_cache import CACHE_FLAGS
+from scry_help import print_help, print_help_format
+
+
 def parse_args(args):
     query = None
     formatting = []
@@ -36,6 +43,30 @@ def parse_flag(arg, formatting):
             raise 'Must have a "print=" flag before using "else="'
         formatting.append(value)
         return True
+    elif arg == '--cache-only':
+        # do not query the api, only look at the cache
+        CACHE_FLAGS['cache-only'] = True
+        return True
+    elif arg == '--ignore-cache':
+        # do not look at the cache, query the api regardless
+        CACHE_FLAGS['ignore-cache'] = True
+        return True
+    elif arg == '--do-not-cache':
+        # do not save the query results to the cache
+        CACHE_FLAGS['do-not-cache'] = True
+        return True
+    elif arg == '--clean-cache':
+        clean_cache()
+        return True
+    elif arg == '--delete-cache':
+        delete_cache()
+        return True
+    elif arg == '--help':
+        print_help()
+        sys.exit(0)
+    elif arg == '--help-format':
+        print_help_format()
+        sys.exit(0)
     return False
 
 
