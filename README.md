@@ -58,7 +58,7 @@ The Scryfall.com developers request that you add a delay of 50-100 milliseconds 
 
 ## How to format output
 
-You can use the flag `--print=` to print different information about the cards that the query returns. Within the format string `%` is a special character used to indicate certain parameters based on the JSON card objects. The special parameters are:
+You can use the flag `--print=` to construct a format string to print information about the cards. The contents of this format string will be printed for each card. Within the format string `%` is a special character used to indicate certain card attributes based on the JSON card objects.
 ```
 %n    name
 %m    mana_cost
@@ -73,8 +73,8 @@ You can use the flag `--print=` to print different information about the cards t
 %|    this will separate output into nicely spaced columns
 ```
 ```
-$ scry counterspell --print="%n  %m  [%o]"
-Counterspell  {U}{U}  [Counter target spell.]
+$ scry counterspell --print='Name: (%n)  -  Cost: [%m]  -  Text: "%o"'        
+Name: (Counterspell)  -  Cost: [{U}{U}]  -  Text: "Counter target spell."
 ```
 
 You can also parse the raw JSON yourself by putting the attribute names inside `%{}` and using `.` to separate multiple attributes.
@@ -87,6 +87,10 @@ To print all available property names as a list, use `?`. This can be helpful wh
 ```
 $ scry lightning bolt --print="%{prices.?}"
 ['usd', 'usd_foil', 'usd_etched', 'eur', 'eur_foil', 'tix']
+```
+```
+$ scry lightning bolt --print="Price: $%{prices.usd}"
+Price: $3.61
 ```
 
 To access a specific element of a list, you can reference its index as a number. Indexes begin at 0.
@@ -108,15 +112,19 @@ Vigilance
 
 You can print the name of the previous property using `^`. This can be useful when combined with iterating.
 ```
-$ scry scalding tarn --print="%{prices.*.^}  %|%{prices.*}"
-usd       26.90
-usd_foil  31.71
-eur       24.91
-eur_foil  37.99
-tix       6.78
+$ scry scalding tarn --print="%{prices.*.^}  %| %{prices.*}"
+usd        26.90
+usd_foil   31.71
+eur        24.91
+eur_foil   37.99
+tix        6.78
 ```
 
 Some properties are urls for an api call to another object. You can call the api and continue parsing by using a `/`. This will always return a list, which you can iterate through with `*` or with a specific index.
+```
+$ scry mox lotus --print="%{set_uri}"
+https://api.scryfall.com/sets/4c8bc76a-05a5-43db-aaf0-34deb347b871
+```
 ```
 $ scry mox lotus --print="The set %{set_uri./.*.name} was released %{set_uri./.*.released_at}"
 The set Unhinged was released 2004-11-19
@@ -125,9 +133,9 @@ The set Unhinged was released 2004-11-19
 If you try to print a property that does not exist for a card, instead nothing will be printed for that card.
 You can add the flag `--else=` to print something else instead. This flag takes a format string just like `--print=`. You can chain together any number of `--else=` flags.
 ```
-$ scry venser --print="%n %| Loyalty: %|[%l]" --else="%n %| Power: %|<%p>"
-Venser, Shaper Savant  Power:   <2>
-Venser's Sliver        Power:   <3>
-Venser, the Sojourner  Loyalty: [3]
+$ scry venser --print="%n %| Loyalty: %| <%l>" --else="%n %| Power: %| [%p]"
+Venser, Shaper Savant  Power:    [2]
+Venser's Sliver        Power:    [3]
+Venser, the Sojourner  Loyalty:  <3>
 ```
 
