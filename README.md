@@ -3,7 +3,7 @@ A command line tool for querying the scryfall.com API for Magic cards.
 
 Scrycall makes it easy to search for MTG cards from the command line. It prints the card information of your choice to the terminal, allowing for easy integration with other command line tools using pipes. Scrycall uses https://scryfall.com/ to query for cards which are returned as JSON objects. You can parse the JSON using special format parameters (see below) to print any information you want about the cards you query.
 
-Scrycall also stores the JSON data in a local cache at `~/.cache/scrycall/` to quickly access for repeated queries.
+Scrycall also stores the JSON data in a local cache at `~/.cache/scrycall/` to quickly access for repeated queries. Anything in the cache older than 24 hours is considered stale, and will automatically be replaced with fresh data from the api.
 
 
 ## How to run Scrycall
@@ -139,3 +139,26 @@ Venser's Sliver        Power:    [3]
 Venser, the Sojourner  Loyalty:  <3>
 ```
 
+## Other optional flags
+```
+--cache-only
+    Query your local cache only. Do not query the api even if cache is stale.
+
+--ignore-cache
+    Query the api only. Do not query cache even if api can not be reached.
+
+--do-not-cache
+    Do not write new api data to your local cache.
+
+--clean-cache
+    Delete any stale data from the local cache.
+
+--delete-cache
+    Delete everything from the local cache.
+
+--help
+    Display some help, like you see here.
+
+--help-format
+    Display some help for formatting your --print="" and --else="" flags.
+```
