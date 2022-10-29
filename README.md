@@ -139,8 +139,42 @@ Venser's Sliver        Power:    [3]
 Venser, the Sojourner  Loyalty:  <3>
 ```
 
+For dual-faced-cards, the top-level object is formatted differently than a normal card.
+You can access each face of a card via the `card_faces` property. This is a list containing relevant information about each face of the card. The first element of the list is the front face, and the second element is the back face.
+```
+$ scry 'huntmaster of the fells' --print='%{card_faces.*.name} %| %{card_faces.*.power}/%{card_faces.*.toughness}'
+Huntmaster of the Fells  2/2
+Ravager of the Fells     4/4
+```
+
+When parsing a DFC, if a property is not found on the top-level object then Scrycall will automatically check the card faces for that property. You can disable this feature with the flag `--no-dfc-parse` to treat this scenario like any other card with a missing property.
+```
+$ scry 'mirror-breaker' --print='%n %| %p/%t'
+Fable of the Mirror-Breaker // Reflection of Kiki-Jiki  2/2
+Kiki-Jiki, Mirror Breaker                               2/2
+```
+```
+$ scry 'mirror-breaker' --print='%n %| %p/%t' --no-dfc-parse
+Kiki-Jiki, Mirror Breaker  2/2
+```
+You can also specify which face of the card you want to work with for DFCs with the `--dfc-default-front` or `--dfc-default-back` flags.
+```
+$ scry 'jace, vryn`s prodigy' --print='%n' --dfc-default-back
+Jace, Telepath Unbound
+```
+
 ## Other optional flags
 ```
+--no-dfc-parse
+    Dual-faced-card objects are formatted differently than regular cards. If a
+    property is not available on the top-level DFC object, then Scrycall will
+    automatically look for that property on the front and back faces.
+    Setting this flag will disable the automatic parsing of the card faces.
+
+--dfc-default-front
+--dfc-default-back
+    Select which card face to work with when handling dual-faced-cards.
+
 --cache-only
     Query your local cache only. Do not query the api even if cache is stale.
 
