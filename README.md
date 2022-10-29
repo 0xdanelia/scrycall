@@ -165,16 +165,6 @@ Jace, Telepath Unbound
 
 ## Other optional flags
 ```
---no-dfc-parse
-    Dual-faced-card objects are formatted differently than regular cards. If a
-    property is not available on the top-level DFC object, then Scrycall will
-    automatically look for that property on the front and back faces.
-    Setting this flag will disable the automatic parsing of the card faces.
-
---dfc-default-front
---dfc-default-back
-    Select which card face to work with when handling dual-faced-cards.
-
 --cache-only
     Query your local cache only. Do not query the api even if cache is stale.
 
