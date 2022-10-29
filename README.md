@@ -163,6 +163,14 @@ Kiki-Jiki, Mirror Breaker  2/2
 ```
 You can also specify which face of the card you want to work with for DFCs with the `--dfc-default-front` or `--dfc-default-back` flags.
 ```
+$ scry 'jace, vryn`s prodigy' --print='%n'
+Jace, Vryn's Prodigy // Jace, Telepath Unbound
+```
+```
+$ scry 'jace, vryn`s prodigy' --print='%n' --dfc-default-front
+Jace, Vryn's Prodigy
+```
+```
 $ scry 'jace, vryn`s prodigy' --print='%n' --dfc-default-back
 Jace, Telepath Unbound
 ```
