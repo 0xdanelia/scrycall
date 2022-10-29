@@ -142,9 +142,9 @@ Venser, the Sojourner  Loyalty:  <3>
 For dual-faced-cards, the top-level object is formatted differently than a normal card.
 You can access each face of a card via the `card_faces` property. This is a list containing relevant information about each face of the card. The first element of the list is the front face, and the second element is the back face.
 ```
-$ scry 'huntmaster of the fells' --print='%{card_faces.*.name} %| %{card_faces.*.power}/%{card_faces.*.toughness}'
-Huntmaster of the Fells  2/2
-Ravager of the Fells     4/4
+$ scry 'huntmaster of the fells' --print='%{card_faces.*.name} %| %{card_faces.*.mana_cost}'
+Huntmaster of the Fells  {2}{R}{G}
+Ravager of the Fells
 ```
 
 When parsing a DFC, if a property is not found on the top-level object then Scrycall will automatically check the card faces for that property. You can disable this feature with the flag `--no-dfc-parse` to treat this scenario like any other card with a missing property.
