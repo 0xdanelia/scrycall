@@ -3,6 +3,11 @@ import time
 from scry_data import get_json_data_from_url
 
 
+PRINT_FLAGS = {
+    'dfc-default-face': None,
+    'dfc-smart-parse': True,
+}
+
 # shortcuts for printing card attributes in the format string
 ATTR_CODES = {
     '%n': '%{name}',
@@ -44,6 +49,9 @@ def print_data(data_list, format_list):
 
     print_lines = []
     for data in data_list:
+        # parse a specific DFC face if specified
+        if PRINT_FLAGS['dfc-default-face'] is not None and data.get('card_faces') is not None:
+            data = data.get('card_faces')[PRINT_FLAGS['dfc-default-face']]
         # populate the format string with attributes from the data
         # whenever a format string cannot be fully populated, try the next 'else' string
         formats_to_attempt = format_list
@@ -164,6 +172,12 @@ def get_attribute_value(attribute_name, data):
         else:
             attr_value = get_value_from_json_object(attr, attr_value)
         if attr_value is None:
+            # if an attribute cannot be found on a DFC, try looking at the individual faces
+            if PRINT_FLAGS['dfc-smart-parse'] and data.get('card_faces') is not None:
+                attr_value = get_attribute_value(attribute_name, data.get('card_faces')[0])
+                if attr_value is None:
+                    attr_value = get_attribute_value(attribute_name, data.get('card_faces')[1])
+                return attr_value
             return None
         prev_attr_name = attr
     return attr_value

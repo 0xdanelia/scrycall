@@ -3,6 +3,7 @@ import sys
 from scry_cache import clean_cache, delete_cache
 from scry_cache import CACHE_FLAGS
 from scry_help import print_help, print_help_format
+from scry_output import PRINT_FLAGS
 
 
 def parse_args(args):
@@ -42,6 +43,22 @@ def parse_flag(arg, formatting):
         if not formatting:
             raise 'Must have a "print=" flag before using "else="'
         formatting.append(value)
+        return True
+    elif arg == '--no-dfc-parse':
+        # turn off smart parsing for dual-faced-cards
+        PRINT_FLAGS['dfc-smart-parse'] = False
+        return True
+    elif arg == '--dfc-default-front':
+        # default to the front face of a dfc
+        if PRINT_FLAGS['dfc-default-face'] is not None:
+            raise 'dfc default face already set'
+        PRINT_FLAGS['dfc-default-face'] = 0
+        return True
+    elif arg == '--dfc-default-back':
+        # default to the back face of a dfc
+        if PRINT_FLAGS['dfc-default-face'] is not None:
+            raise 'dfc default face already set'
+        PRINT_FLAGS['dfc-default-face'] = 1
         return True
     elif arg == '--cache-only':
         # do not query the api, only look at the cache
