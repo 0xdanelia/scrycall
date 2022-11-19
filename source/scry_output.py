@@ -187,9 +187,9 @@ def get_list_of_available_attribute_names(data):
     if isinstance(data, dict):
         return list(data.keys())
     elif isinstance(data, list):
-        return range(len(data))
+        return list(range(len(data)))
     else:
-        return range(len(str(data)))
+        return list(range(len(str(data))))
 
 
 def get_value_from_json_object(attr, data):
