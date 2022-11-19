@@ -34,14 +34,14 @@ def parse_flag(arg, formatting):
         # format the plain-text output
         value = arg[8:]
         if formatting:
-            raise '"print=" flag already set'
+            raise Exception('ERROR: "print=" flag already set')
         formatting.append(value)
         return True
     elif arg.startswith('--else='):
         # if a formatted field has no value, instead use this as the print format
         value = arg[7:]
         if not formatting:
-            raise 'Must have a "print=" flag before using "else="'
+            raise Exception('ERROR: Must have a "print=" flag before using "else="')
         formatting.append(value)
         return True
     elif arg == '--no-dfc-parse':
@@ -51,21 +51,25 @@ def parse_flag(arg, formatting):
     elif arg == '--dfc-default-front':
         # default to the front face of a dfc
         if PRINT_FLAGS['dfc-default-face'] is not None:
-            raise 'dfc default face already set'
+            raise Exception('ERROR: "dfc-default-face" can only be set once')
         PRINT_FLAGS['dfc-default-face'] = 0
         return True
     elif arg == '--dfc-default-back':
         # default to the back face of a dfc
         if PRINT_FLAGS['dfc-default-face'] is not None:
-            raise 'dfc default face already set'
+            raise Exception('ERROR: "dfc-default-face" can only be set once')
         PRINT_FLAGS['dfc-default-face'] = 1
         return True
     elif arg == '--cache-only':
         # do not query the api, only look at the cache
+        if CACHE_FLAGS['ignore-cache']:
+            raise Exception('ERROR: Cannot use both "ignore-cache" and "cache-only"')
         CACHE_FLAGS['cache-only'] = True
         return True
     elif arg == '--ignore-cache':
         # do not look at the cache, query the api regardless
+        if CACHE_FLAGS['cache-only']:
+            raise Exception('ERROR: Cannot use both "cache-only" and "ignore-cache"')
         CACHE_FLAGS['ignore-cache'] = True
         return True
     elif arg == '--do-not-cache':

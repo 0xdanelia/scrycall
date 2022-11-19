@@ -23,9 +23,14 @@ def get_json_data_from_url(url):
 def parse_json_data_into_list(data):
     if data is None:
         return []
+
     data_type = data.get('object')
     if data_type == 'list' or data_type == 'catalog':
-        data_list = data.get('data')
+        data_list = []
+        for warning in data.get('warnings', []):
+            data_list.append({'object': 'warning', 'warning': warning})
+
+        data_list += data.get('data')
         if data.get('has_more'):
             next_url = data.get('next_page')
             next_data = get_api_data_from_url(next_url)

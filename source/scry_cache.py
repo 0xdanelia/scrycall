@@ -115,6 +115,16 @@ def get_cache_path_from_object(obj):
         obj_name = hashlib.md5(obj.get('comment', '').encode()).hexdigest()
         obj_id = obj.get('oracle_id', '')
 
+    elif obj_type == 'error':
+        obj_name = str(obj.get('status', '')) + obj.get('code', '')
+        obj_id = obj.get('details', '')
+        for warning in obj.get('warnings', []):
+            obj_id += warning
+        obj_id = hashlib.md5(obj_id.encode()).hexdigest()
+
+    elif obj_type == 'warning':
+        obj_name = obj.get('warning', '')
+
     obj_name = remove_special_characters(obj_name)
 
     return f'{obj_type}/{obj_name}_{obj_id}'

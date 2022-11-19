@@ -1,3 +1,4 @@
+import sys
 import time
 
 from scry_data import get_json_data_from_url
@@ -45,10 +46,23 @@ def print_data(data_list, format_list):
             num_columns = format_list[i].count(column_placeholder) + 1
         else:
             if num_columns != format_list[i].count(column_placeholder) + 1:
-                raise 'Each "print=" and "else=" string must contain the same number of "%|" column separators'
+                raise Exception('ERROR: Each "print=" and "else=" flag must contain '
+                                'the same number of "%|" column separators')
 
     print_lines = []
     for data in data_list:
+        # print errors and exit if the query returned any
+        if data.get('object') == 'error':
+            print(f'ERROR: HTTP {data.get("status")} {data.get("code")} - {data.get("details")}')
+            for warning in data.get('warnings', []):
+                print(f'WARNING: {warning}')
+            sys.exit(1)
+
+        # print warnings if the query returned any
+        if data.get('object') == 'warning':
+            print(f'WARNING: {data.get("warning")}')
+            continue
+
         # parse a specific DFC face if specified
         if PRINT_FLAGS['dfc-default-face'] is not None and data.get('card_faces') is not None:
             data = data.get('card_faces')[PRINT_FLAGS['dfc-default-face']]
