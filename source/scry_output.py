@@ -1,7 +1,7 @@
-import sys
 import time
 
 from scry_data import get_json_data_from_url
+from scry_exception import ScrycallArgException, ScrycallApiException
 
 
 PRINT_FLAGS = {
@@ -46,17 +46,17 @@ def print_data(data_list, format_list):
             num_columns = format_list[i].count(column_placeholder) + 1
         else:
             if num_columns != format_list[i].count(column_placeholder) + 1:
-                raise Exception('ERROR: Each "print=" and "else=" flag must contain '
-                                'the same number of "%|" column separators')
+                raise ScrycallArgException('ERROR: Each "print=" and "else=" flag must contain '
+                                           'the same number of "%|" column separators')
 
     print_lines = []
     for data in data_list:
         # print errors and exit if the query returned any
         if data.get('object') == 'error':
-            print(f'ERROR: HTTP {data.get("status")} {data.get("code")} - {data.get("details")}')
+            error_msg = f'ERROR: HTTP {data.get("status")} {data.get("code")} - {data.get("details")}'
             for warning in data.get('warnings', []):
-                print(f'WARNING: {warning}')
-            sys.exit(1)
+                error_msg += f'\nWARNING: {warning}'
+            raise ScrycallApiException(error_msg)
 
         # print warnings if the query returned any
         if data.get('object') == 'warning':

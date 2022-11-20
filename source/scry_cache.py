@@ -124,6 +124,7 @@ def get_cache_path_from_object(obj):
 
     elif obj_type == 'warning':
         obj_name = obj.get('warning', '')
+        obj_name = hashlib.md5(obj_name.encode()).hexdigest() + '-' + obj_name
 
     obj_name = remove_special_characters(obj_name)
 

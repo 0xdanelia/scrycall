@@ -4,6 +4,7 @@ from scry_cache import clean_cache, delete_cache
 from scry_cache import CACHE_FLAGS
 from scry_help import print_help, print_help_format
 from scry_output import PRINT_FLAGS
+from scry_exception import ScrycallArgException
 
 
 def parse_args(args):
@@ -34,14 +35,14 @@ def parse_flag(arg, formatting):
         # format the plain-text output
         value = arg[8:]
         if formatting:
-            raise Exception('ERROR: "print=" flag already set')
+            raise ScrycallArgException('ERROR: "print=" flag already set')
         formatting.append(value)
         return True
     elif arg.startswith('--else='):
         # if a formatted field has no value, instead use this as the print format
         value = arg[7:]
         if not formatting:
-            raise Exception('ERROR: Must have a "print=" flag before using "else="')
+            raise ScrycallArgException('ERROR: Must have a "print=" flag before using "else="')
         formatting.append(value)
         return True
     elif arg == '--no-dfc-parse':
@@ -51,25 +52,25 @@ def parse_flag(arg, formatting):
     elif arg == '--dfc-default-front':
         # default to the front face of a dfc
         if PRINT_FLAGS['dfc-default-face'] is not None:
-            raise Exception('ERROR: "dfc-default-face" can only be set once')
+            raise ScrycallArgException('ERROR: "dfc-default-face" can only be set once')
         PRINT_FLAGS['dfc-default-face'] = 0
         return True
     elif arg == '--dfc-default-back':
         # default to the back face of a dfc
         if PRINT_FLAGS['dfc-default-face'] is not None:
-            raise Exception('ERROR: "dfc-default-face" can only be set once')
+            raise ScrycallArgException('ERROR: "dfc-default-face" can only be set once')
         PRINT_FLAGS['dfc-default-face'] = 1
         return True
     elif arg == '--cache-only':
         # do not query the api, only look at the cache
         if CACHE_FLAGS['ignore-cache']:
-            raise Exception('ERROR: Cannot use both "ignore-cache" and "cache-only"')
+            raise ScrycallArgException('ERROR: Cannot use both "ignore-cache" and "cache-only"')
         CACHE_FLAGS['cache-only'] = True
         return True
     elif arg == '--ignore-cache':
         # do not look at the cache, query the api regardless
         if CACHE_FLAGS['cache-only']:
-            raise Exception('ERROR: Cannot use both "cache-only" and "ignore-cache"')
+            raise ScrycallArgException('ERROR: Cannot use both "cache-only" and "ignore-cache"')
         CACHE_FLAGS['ignore-cache'] = True
         return True
     elif arg == '--do-not-cache':
