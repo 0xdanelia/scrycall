@@ -93,11 +93,11 @@ def get_url_cache_name(url):
 
     # filenames are limited to 255 characters in many systems
     # md5 hashes are 32 characters long
-    # limit the url portion of the filename to 220 characters, just to be safe
-    if len(trimmed_url) > 220:
-        trimmed_url = trimmed_url[:220]
+    # limit the url portion of the filename to 200 characters, just to be safe
+    if len(trimmed_url) > 200:
+        trimmed_url = trimmed_url[:200]
 
-    return f'{trimmed_url}_{hashed_url}'
+    return f'{trimmed_url}_{hashed_url}.json'
 
 
 def get_cache_path_from_object(obj):
@@ -112,23 +112,30 @@ def get_cache_path_from_object(obj):
         obj_id = obj.get('id', '')
 
     elif obj_type == 'ruling':
-        obj_name = hashlib.md5(obj.get('comment', '').encode()).hexdigest()
-        obj_id = obj.get('oracle_id', '')
+        obj_name = obj.get('oracle_id', '')
+        obj_id = obj.get('comment', '')
 
     elif obj_type == 'error':
-        obj_name = str(obj.get('status', '')) + obj.get('code', '')
+        obj_name = str(obj.get('status', '')) + '-' + obj.get('code', '')
         obj_id = obj.get('details', '')
         for warning in obj.get('warnings', []):
-            obj_id += warning
-        obj_id = hashlib.md5(obj_id.encode()).hexdigest()
+            obj_id = obj_id + '_' + warning
 
     elif obj_type == 'warning':
-        obj_name = obj.get('warning', '')
-        obj_name = hashlib.md5(obj_name.encode()).hexdigest() + '-' + obj_name
+        obj_name = 'warning'
+        obj_id = obj.get('warning', '')
 
-    obj_name = remove_special_characters(obj_name)
+    file_name = obj_name + '_' + obj_id
+    hashed_file_name = hashlib.md5(file_name.encode()).hexdigest()
+    file_name = remove_special_characters(file_name)
 
-    return f'{obj_type}/{obj_name}_{obj_id}'
+    # filenames are limited to 255 characters in many systems
+    # md5 hashes are 32 characters long
+    # limit the name portion of the filename to 200 characters, just to be safe
+    if len(file_name) > 200:
+        file_name = file_name[:200]
+
+    return f'{obj_type}/{file_name}_{hashed_file_name}.json'
 
 
 def remove_special_characters(text):

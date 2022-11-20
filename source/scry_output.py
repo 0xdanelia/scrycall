@@ -1,3 +1,4 @@
+import sys
 import time
 
 from scry_data import get_json_data_from_url
@@ -5,6 +6,8 @@ from scry_exception import ScrycallArgException, ScrycallApiException
 
 
 PRINT_FLAGS = {
+    'print-warnings': True,
+    'print-errors': True,
     'dfc-default-face': None,
     'dfc-smart-parse': True,
 }
@@ -60,7 +63,7 @@ def print_data(data_list, format_list):
 
         # print warnings if the query returned any
         if data.get('object') == 'warning':
-            print(f'WARNING: {data.get("warning")}')
+            print_warning(f'WARNING: {data.get("warning")}')
             continue
 
         # parse a specific DFC face if specified
@@ -282,3 +285,13 @@ def preserve_newlines_in_columns(cols):
         output_rows.append(row)
 
     return output_rows
+
+
+def print_error(msg):
+    if PRINT_FLAGS['print-errors']:
+        print(msg, file=sys.stderr)
+
+
+def print_warning(msg):
+    if PRINT_FLAGS['print-warnings']:
+        print(msg, file=sys.stderr)

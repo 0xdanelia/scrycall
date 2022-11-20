@@ -61,6 +61,14 @@ def parse_flag(arg, formatting):
             raise ScrycallArgException('ERROR: "dfc-default-face" can only be set once')
         PRINT_FLAGS['dfc-default-face'] = 1
         return True
+    elif arg == '--no-warnings':
+        # do not print any warning messages on successful queries
+        PRINT_FLAGS['print-warnings'] = False
+        return True
+    elif arg == '--no-errors':
+        # do not print any error messages on unsuccessful queries
+        PRINT_FLAGS['print-errors'] = False
+        return True
     elif arg == '--cache-only':
         # do not query the api, only look at the cache
         if CACHE_FLAGS['ignore-cache']:

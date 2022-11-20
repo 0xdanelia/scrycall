@@ -3,7 +3,7 @@ import sys
 
 from scry_args import parse_args
 from scry_data import get_cards_from_query
-from scry_output import print_data
+from scry_output import print_data, print_error
 from scry_exception import ScrycallArgException, ScrycallApiException
 
 
@@ -26,7 +26,7 @@ def main():
         print_data(cards, formatting)
 
     except (ScrycallArgException, ScrycallApiException) as e:
-        print(e)
+        print_error(e)
         return 1
 
     return 0

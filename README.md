@@ -177,6 +177,12 @@ Jace, Telepath Unbound
 
 ## Other optional flags
 ```
+--no-warnings
+    Suppress warning messages on successful queries.
+
+--no-errors
+    Suppress error messages on failed queries.
+    
 --cache-only
     Query your local cache only. Do not query the api even if cache is stale.
 
