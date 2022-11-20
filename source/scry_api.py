@@ -31,9 +31,11 @@ def get_api_data_from_url(url):
         # scryfall returns an Error object for bad requests, which can be extracted from the exception
         data = json.load(exc)
 
-        # need to raise the rate-limit error here to prevent it from being cached
-        # otherwise the user will continue to see this error even after they slow down their query rate
-        if exc.code == 429:
+        # need to raise some HTTP errors here to prevent them from being cached, otherwise scrycall will
+        # load the error from the cache even after the problem is resolved:
+        # 429 = rate limit exceeded. We want to allow the user to see new results after slowing their query rate.
+        # 500+ = these are issues on the server-side, and will hopefully be only temporary.
+        if exc.code == 429 or exc.code >= 500:
             error_msg = f'ERROR: HTTP {data.get("status")} {data.get("code")} - {data.get("details")}'
             for warning in data.get('warnings', []):
                 error_msg += f'\nWARNING: {warning}'
